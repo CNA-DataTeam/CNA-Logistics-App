@@ -42,12 +42,12 @@ Before installing the app, ensure the following are insatalled on your machine:
 -   Python 3.11.3 (IT Help Needed)
 -   Git for Windows
     Ensure the following selections:
-    Use Git from the command line and also from 3rd-party software
+    - Git from the command line and also from 3rd-party software
         👉 this is critical (adds Git to PATH)
-    Use bundled OpenSSH
-    Use the OpenSSL library
-    Checkout Windows-style, commit Unix-style line endings
-    Use MinTTY (default terminal)
+    - Use bundled OpenSSH
+    - Use the OpenSSL library
+    - Checkout Windows-style, commit Unix-style line endings
+    - Use MinTTY (default terminal)
 -   Access to the GitHub repository
 
 Python and Git must be available on the system PATH (Check with IT).
