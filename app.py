@@ -19,6 +19,25 @@ st.set_page_config(
     layout="centered"
 )
 
+def get_onedrive_business_root() -> Path:
+    """
+    Returns the current user's OneDrive for Business root.
+    """
+    root = (
+        os.environ.get("OneDriveCommercial")
+        or os.environ.get("ONEDRIVECOMMERCIAL")
+        or os.environ.get("OneDrive")
+    )
+
+    if not root:
+        st.error(
+            "OneDrive folder not found. "
+            "Please ensure OneDrive is installed and signed in."
+        )
+        st.stop()
+
+    return Path(root)
+
 # ---------- GLOBAL STYLING ----------
 st.markdown(
     """
@@ -65,19 +84,34 @@ st.markdown(
 # =============================
 # PATHS (robust resolution)
 # =============================
-def resolve_path(base: Path, raw: str) -> Path:
-    p = Path(raw)
-    return p if p.is_absolute() else (base / p)
+ONEDRIVE_ROOT = get_onedrive_business_root()
 
-ROOT_DATA_DIR = Path(
-    st.secrets.get(
-        "ROOT_DATA_DIR",
-        r"C:\Users\lbulfon\clarkinc.biz\Clark National Accounts - Documents\Logistics and Supply Chain\Logistics Support\Task Tracker",
-    )
+TASKS_CSV = (
+    ONEDRIVE_ROOT
+    / st.secrets["TASKS_CSV_RELATIVE"]
 ).resolve()
 
-TASKS_CSV = resolve_path(ROOT_DATA_DIR, st.secrets.get("TASKS_CSV", "tasks.csv")).resolve()
-ACCOUNTS_XLSX = ROOT_DATA_DIR / "Accounts.xlsx"
+ACCOUNTS_XLSX = (
+    ONEDRIVE_ROOT
+    / st.secrets["ACCOUNTS_XLSX_RELATIVE"]
+).resolve()
+
+if not TASKS_CSV.exists():
+    st.error(f"Tasks file not found:\n{TASKS_CSV}")
+    st.stop()
+
+if not ACCOUNTS_XLSX.exists():
+    st.error(f"Accounts file not found:\n{ACCOUNTS_XLSX}")
+    st.stop()
+
+ROOT_DATA_DIR = (
+    ONEDRIVE_ROOT
+    / st.secrets["ROOT_DATA_DIR_RELATIVE"]
+).resolve()
+
+if not ROOT_DATA_DIR.exists():
+    st.error(f"Root data directory not found:\n{ROOT_DATA_DIR}")
+    st.stop()
 
 LOGO_PATH = Path(
     r"\\Corp-filesrv-01\dfs_920$\Reporting\Power BI Branding\CNA-Logo_Greenx4.png"
@@ -130,6 +164,9 @@ def load_accounts_from_excel(path: Path) -> list[str]:
     )
 
 def build_out_dir(root: Path, user_key: str, ts: datetime) -> Path:
+    if not root.exists():
+        raise FileNotFoundError(f"Root data directory does not exist: {root}")
+
     return (
         root
         / f"user={user_key}"
