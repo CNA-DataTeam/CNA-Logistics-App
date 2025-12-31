@@ -106,25 +106,6 @@ scripts - all required configuration files
 
 Once this step is complete, you are ready to proceed with setup.
 
-------------------------------------------------------------------------
-
-### 2. Create the Secrets File
-
-Create:
-
-    C:\Projects\Task Tracker\.streamlit\secrets.toml
-
-Example:
-
-``` toml
-ROOT_DATA_DIR = "Link of Clark National Accounts Sharepoint folder" (connect with Luca)
-TASKS_CSV = "tasks.csv"
-```
-
-This file is intentionally excluded from Git.
-
-------------------------------------------------------------------------
-
 ### 3. Run Setup (One Time)
 
 From:
