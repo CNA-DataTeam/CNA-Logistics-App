@@ -68,9 +68,6 @@ machine.
 3.  Right-click → **New → Folder**
 4.  Name the folder:
 
-```{=html}
-<!-- -->
-```
     Projects
 
 You should now have:
@@ -120,7 +117,7 @@ Create:
 Example:
 
 ``` toml
-ROOT_DATA_DIR = "C:/Users/<your_user>/clarkinc.biz/Clark National Accounts - Documents/Logistics and Supply Chain/Logistics Support/Task Tracker"
+ROOT_DATA_DIR = "Link of Clark National Accounts Sharepoint folder" (connect with Luca)
 TASKS_CSV = "tasks.csv"
 ```
 
@@ -165,22 +162,6 @@ On every launch, the app:
 
 ------------------------------------------------------------------------
 
-## Data Output
-
-Uploaded tasks are written as Parquet files:
-
-    ROOT_DATA_DIR/
-      user=<user_login>/
-        year=YYYY/
-          month=MM/
-            day=DD/
-              task_<timestamp>_<id>.parquet
-
-Each record includes: - Task and cadence - User info - Start/end
-timestamps (UTC) - Duration (seconds) - Notes - App version
-
-------------------------------------------------------------------------
-
 ## Common Issues
 
 ### No secrets found
@@ -197,15 +178,6 @@ Re-run:
 
 ------------------------------------------------------------------------
 
-## Design Principles
-
--   Clone once, pull forever
--   Clear separation between setup and runtime
--   GitHub as single source of truth
--   Safe for non-technical users
-
-------------------------------------------------------------------------
-
 ## Versioning
 
 The app version is defined in `app.py`:
@@ -215,10 +187,3 @@ APP_VERSION = "x.y.z"
 ```
 
 Included in uploaded records.
-
-------------------------------------------------------------------------
-
-## Final Notes
-
-This is an internal productivity tool designed to be predictable,
-supportable, and easy to maintain in a corporate Windows environment.
