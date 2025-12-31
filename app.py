@@ -151,11 +151,11 @@ def load_tasks(path: Path) -> pd.DataFrame:
 def load_accounts_from_excel(path: Path) -> list[str]:
     if not path.exists():
         return []
-    df = pd.read_excel(path, sheet_name="Accounts", engine="openpyxl")
-    if "CompanyGroup" not in df.columns:
+    df = pd.read_excel(path, sheet_name="CNA Personnel", engine="openpyxl")
+    if "Company Group USE" not in df.columns:
         return []
     return sorted(
-        df["CompanyGroup"]
+        df["Company Group USE"]
         .dropna()
         .astype(str)
         .str.strip()
@@ -318,6 +318,9 @@ task_name = st.selectbox(
     key=f"task_name_{st.session_state.reset_counter}",
 )
 
+if not task_name:
+    st.info("Select a task to begin.")
+
 # =============================
 # CADENCE BUTTONS (Daily / Weekly / Periodic)
 # =============================
@@ -378,13 +381,6 @@ selected_account = st.selectbox(
     disabled=inputs_locked,
     key=f"selected_account_{st.session_state.reset_counter}",
 )
-
-# Optional clarity
-if task_name and st.session_state.selected_cadence:
-    st.caption(f"Selected cadence: **{st.session_state.selected_cadence}**")
-
-if not task_name:
-    st.info("Select a task to begin.")
 
 # =============================
 # NOTES (editable until upload)
