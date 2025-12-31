@@ -1,9 +1,5 @@
 # Logistics Support Task Tracker
 
-An internal Streamlit application used to track time spent on Logistics
-Support tasks. Designed for reliability, repeatability, and ease of use
-by non-technical users.
-
 ------------------------------------------------------------------------
 
 ## Overview
@@ -40,14 +36,21 @@ simple batch files
 
 ## Prerequisites (One-Time)
 
-Before installing the app, ensure the following are available:
+Before installing the app, ensure the following are insatalled on your machine:
 
 -   Windows OS
--   Python 3.10+
+-   Python 3.11.3 (IT Help Needed)
 -   Git for Windows
+    Ensure the following selections:
+      ✔ Use Git from the command line and also from 3rd-party software
+        👉 this is critical (adds Git to PATH)
+      ✔ Use bundled OpenSSH
+      ✔ Use the OpenSSL library
+      ✔ Checkout Windows-style, commit Unix-style line endings
+      ✔ Use MinTTY (default terminal)
 -   Access to the GitHub repository
 
-Python and Git must be available on the system PATH.
+Python and Git must be available on the system PATH (Check with IT).
 
 ------------------------------------------------------------------------
 
@@ -55,17 +58,56 @@ Python and Git must be available on the system PATH.
 
 ### 1. Clone the Repository
 
-Recommended location:
+The application is designed to live in a standard location on your
+machine.
+
+### Step 1 --- Create the Projects folder
+
+1.  Open **File Explorer**
+2.  Navigate to **Local Disk (C:)**
+3.  Right-click → **New → Folder**
+4.  Name the folder:
+
+```{=html}
+<!-- -->
+```
+    Projects
+
+You should now have:
 
     C:\Projects
+
+------------------------------------------------------------------------
+
+### Step 2 --- Open a terminal in the Projects folder
+
+1.  Open the `C:\Projects` folder
+2.  Hold **Shift**
+3.  Right-click inside the folder
+4.  Select **"Open PowerShell window here"** or **"Open in Terminal"**
+
+A terminal window should open with the path set to:
+
+    C:\Projects>
+
+------------------------------------------------------------------------
+
+### Step 3 --- Clone the repository
+
+In the terminal, run:
 
 ``` powershell
 git clone https://github.com/CNA-DataTeam/LogisticsSupportTaskTracker.git
 ```
 
-This creates:
+This will download the application from GitHub and create a new folder:
 
     C:\Projects\Task Tracker
+
+This folder contains: - the Streamlit application - setup and launch
+scripts - all required configuration files
+
+Once this step is complete, you are ready to proceed with setup.
 
 ------------------------------------------------------------------------
 
