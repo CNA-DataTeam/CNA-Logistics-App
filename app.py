@@ -102,7 +102,7 @@ ROOT_DATA_DIR = (
     / "Task-Tracker"
 )
 
-TASKS_CSV = ROOT_DATA_DIR / "tasks.csv"
+TASKS_CSV = ROOT_DATA_DIR / "TasksAndTargets.csv"
 
 ACCOUNTS_XLSX = (
     CNA_ROOT
