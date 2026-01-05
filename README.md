@@ -94,7 +94,7 @@ A terminal window should open with the path set to:
 In the terminal, run:
 
 ``` powershell
-git clone [https://github.com/CNA-DataTeam/LogisticsSupportTaskTracker.git](https://github.com/CNA-DataTeam/Task-Tracker.git)
+git clone https://github.com/CNA-DataTeam/Task-Tracker.git
 ```
 
 This will download the application from GitHub and create a new folder:
