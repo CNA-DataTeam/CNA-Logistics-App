@@ -2,16 +2,19 @@
 title Logistics Support Task Tracker – Setup
 
 REM ================================
-REM CONFIG (MUST MATCH START FILE)
+REM RESOLVE APP DIRECTORY (CURRENT FOLDER)
 REM ================================
-set APP_DIR=C:\Projects\Task Tracker
-set VENV_DIR=%APP_DIR%\.venv
+set "APP_DIR=%~dp0"
+set "VENV_DIR=%APP_DIR%\.venv"
+
+REM Remove trailing backslash if present
+if "%APP_DIR:~-1%"=="\" set "APP_DIR=%APP_DIR:~0,-1%"
 
 REM ================================
 REM MOVE TO APP DIRECTORY
 REM ================================
 cd /d "%APP_DIR%" || (
-    echo ERROR: Application directory not found:
+    echo ERROR: Unable to access application directory:
     echo %APP_DIR%
     pause
     exit /b 1
@@ -19,6 +22,9 @@ cd /d "%APP_DIR%" || (
 
 echo =========================================
 echo Logistics Task Tracker - First-Time Setup
+echo =========================================
+echo Location:
+echo %APP_DIR%
 echo =========================================
 
 REM ================================
@@ -38,6 +44,8 @@ REM ================================
 if not exist "%VENV_DIR%" (
     echo Creating virtual environment...
     python -m venv "%VENV_DIR%"
+) else (
+    echo Virtual environment already exists.
 )
 
 REM ================================
@@ -53,7 +61,10 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 echo.
+echo =========================================
 echo Setup complete.
-echo You can now double-click Start_Task_Tracker.bat
+echo You can now double-click:
+echo Start_Task_Tracker.bat
+echo =========================================
 echo.
 pause

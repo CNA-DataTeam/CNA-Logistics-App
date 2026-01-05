@@ -99,7 +99,7 @@ ROOT_DATA_DIR = (
     / "Clark National Accounts - Documents"
     / "Logistics and Supply Chain"
     / "Logistics Support"
-    / "Task Tracker"
+    / "Task-Tracker"
 )
 
 TASKS_CSV = ROOT_DATA_DIR / "tasks.csv"
@@ -471,7 +471,7 @@ def confirm_submit():
     st.dataframe(
         summary,
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
         column_config={
             "Field": st.column_config.TextColumn(
                 "Field",
@@ -487,7 +487,7 @@ def confirm_submit():
     left, right = st.columns(2)
 
     with left:
-        if st.button("Submit", type="primary", use_container_width=True):
+        if st.button("Submit", type="primary", width="stretch"):
             record = build_task_record(
                 user_login,
                 user_display,
@@ -509,7 +509,7 @@ def confirm_submit():
             st.rerun()
 
     with right:
-        if st.button("Cancel", use_container_width=True):
+        if st.button("Cancel", width="stretch"):
             st.session_state.confirm_open = False
             st.rerun()
 
