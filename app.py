@@ -74,39 +74,43 @@ st.markdown(
 )
 
 # ============================================================
-# PATH RESOLUTION (CNA SHAREPOINT)
+# PATH RESOLUTION (ONE LINER, NO DRAMA)
 # ============================================================
 def get_os_user() -> str:
     return os.getenv("USERNAME") or os.getenv("USER") or "unknown"
 
 
-def get_cna_root() -> Path:
-    root = Path("C:/Users") / get_os_user() / "clarkinc.biz"
-    if not root.exists():
-        st.error(
-            "CNA SharePoint folder not found.\n\n"
-            f"Expected:\n{root}\n\n"
-            "Please ensure SharePoint is synced locally."
-        )
-        st.stop()
-    return root
+def find_task_tracker_root() -> Path:
+    user = get_os_user()
 
+    roots = [
+        Path(f"C:/Users/{user}/clarkinc.biz"),
+        Path(f"C:/Users/{user}/OneDrive - clarkinc.biz"),
+        Path(f"C:/Users/{user}/OneDrive"),
+    ]
 
-CNA_ROOT = get_cna_root()
+    libraries = [
+        "Clark National Accounts - Documents",
+        "Documents - Clark National Accounts",
+    ]
 
-ROOT_DATA_DIR = (
-    CNA_ROOT
-    / "Clark National Accounts - Documents"
-    / "Logistics and Supply Chain"
-    / "Logistics Support"
-    / "Task-Tracker"
-)
+    rel = Path("Logistics and Supply Chain/Logistics Support/Task-Tracker")
+
+    for root in roots:
+        for lib in libraries:
+            p = root / lib / rel
+            if p.exists():
+                return p
+
+    st.error("Task-Tracker folder not found. Make sure CNA SharePoint is synced locally.")
+    st.stop()
+
+ROOT_DATA_DIR = find_task_tracker_root()
 
 TASKS_CSV = ROOT_DATA_DIR / "TasksAndTargets.csv"
 
 ACCOUNTS_XLSX = (
-    CNA_ROOT
-    / "Clark National Accounts - Documents"
+    ROOT_DATA_DIR.parents[2]
     / "Data and Analytics"
     / "Resources"
     / "CNA Personnel - Temporary.xlsx"
