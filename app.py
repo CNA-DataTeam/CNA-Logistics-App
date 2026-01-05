@@ -31,6 +31,12 @@ st.markdown(
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Work+Sans:wght@400;500;600&display=swap');
 
+    @keyframes blink {
+        50% {
+            opacity: 0;
+        }
+    }
+
     html, body, [class*="css"] {
         font-family: 'Work Sans', sans-serif;
     }
@@ -57,6 +63,11 @@ st.markdown(
         color: #00B19E;
         font-weight: 600;
     }
+
+    .blink-colon {
+        animation: blink 1s steps(1, start) infinite;
+    }
+
     </style>
     """,
     unsafe_allow_html=True,
@@ -124,13 +135,17 @@ def sanitize_key(value: str) -> str:
     return value
 
 
-def format_hhmmss(seconds: int) -> str:
+def format_hhmm(seconds: int) -> str:
     seconds = max(0, int(seconds))
     h = seconds // 3600
     m = (seconds % 3600) // 60
-    s = seconds % 60
-    return f"{h:02d}:{m:02d}:{s:02d}"
+    return f"{h:02d}:{m:02d}"
 
+def format_hh_mm_parts(seconds: int) -> tuple[str, str]:
+    seconds = max(0, int(seconds))
+    h = seconds // 3600
+    m = (seconds % 3600) // 60
+    return f"{h:02d}", f"{m:02d}"
 
 # ============================================================
 # DATA LOADERS
@@ -218,6 +233,7 @@ for k, v in DEFAULT_STATE.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
+timer_placeholder = st.empty()
 
 # ============================================================
 # BUSINESS LOGIC
@@ -310,6 +326,54 @@ task_name = st.selectbox(
 )
 
 # ============================================================
+# CADENCE
+# ============================================================
+CADENCE_ORDER = ["Daily", "Weekly", "Periodic"]
+
+available_cadences = (
+    tasks_df.loc[tasks_df["TaskName"] == task_name, "TaskCadence"]
+    .dropna()
+    .unique()
+    .tolist()
+)
+
+if task_name and st.session_state.state == "idle":
+    if task_name != st.session_state.last_task_name:
+        st.session_state.selected_cadence = None
+        st.session_state.last_task_name = task_name
+
+    if st.session_state.selected_cadence not in available_cadences:
+        st.session_state.selected_cadence = next(
+            (c for c in CADENCE_ORDER if c in available_cadences),
+            None,
+        )
+
+st.caption("Cadence")
+cols = st.columns(3)
+
+for col, cadence in zip(cols, CADENCE_ORDER):
+    is_selected = st.session_state.selected_cadence == cadence
+    is_locked = st.session_state.state != "idle"
+
+    disabled = (
+        not task_name
+        or cadence not in available_cadences
+        or (is_locked and not is_selected)
+    )
+
+    with col:
+        if st.button(
+            cadence,
+            disabled=disabled,
+            type="primary" if is_selected else "secondary",
+            key=f"cad_{cadence}_{st.session_state.reset_counter}",
+        ):
+            # Allow change only before the timer starts
+            if not is_locked:
+                st.session_state.selected_cadence = cadence
+                st.rerun()
+
+# ============================================================
 # ACCOUNT + NOTES
 # ============================================================
 selected_account = st.selectbox(
@@ -322,12 +386,70 @@ selected_account = st.selectbox(
 st.text_area("Notes (optional)", key="notes", height=120)
 
 # ============================================================
-# TIMER
+# TIMER / TASK CONTROL
 # ============================================================
 if st.session_state.state == "running":
-    st_autorefresh(interval=1000, key="timer")
+    with timer_placeholder:
+        st_autorefresh(interval=60_000, key="timer")
 
 st.session_state.elapsed_seconds = compute_elapsed_seconds()
+
+st.subheader("Task Control")
+
+left, right = st.columns(2)
+
+with left:
+    hh, mm = format_hh_mm_parts(st.session_state.elapsed_seconds)
+
+    is_running = st.session_state.state == "running"
+    colon_class = "blink-colon" if is_running else ""
+
+    st.markdown(
+        f"""
+        <div style="text-align:center;">
+            <div style="font-size:32px; font-weight:600;">
+                {hh}<span class="{colon_class}">:</span>{mm}
+            </div>
+            <div style="font-size:12px; color:#6b6b6b;">
+                Elapsed Time
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+with right:
+    # START (idle)
+    if st.session_state.state == "idle":
+        can_start = bool(task_name and st.session_state.selected_cadence)
+        if st.button("Start", disabled=not can_start):
+            st.session_state.state = "running"
+            st.session_state.start_utc = now_utc()
+            st.rerun()
+
+    # PAUSE (running)
+    elif st.session_state.state == "running":
+        if st.button("Pause"):
+            st.session_state.state = "paused"
+            st.session_state.pause_start_utc = now_utc()
+            st.rerun()
+
+    # RESUME (paused)
+    elif st.session_state.state == "paused":
+        if st.button("Resume"):
+            st.session_state.paused_seconds += int(
+                (now_utc() - st.session_state.pause_start_utc).total_seconds()
+            )
+            st.session_state.pause_start_utc = None
+            st.session_state.state = "running"
+            st.rerun()
+
+    # END (running or paused)
+    if st.session_state.state in ["running", "paused"]:
+        if st.button("End"):
+            st.session_state.state = "ended"
+            st.session_state.end_utc = now_utc()
+            st.rerun()
 
 # ============================================================
 # CONFIRMATION MODAL
@@ -339,14 +461,28 @@ def confirm_submit():
             ("User", user_display),
             ("Task Name", task_name),
             ("Cadence", st.session_state.selected_cadence),
-            ("Time", format_hhmmss(st.session_state.elapsed_seconds)),
+            ("Time", format_hhmm(st.session_state.elapsed_seconds)),
             ("Account", selected_account),
             ("Notes", st.session_state.notes),
         ],
         columns=["Field", "Value"],
     )
 
-    st.table(summary)
+    st.dataframe(
+        summary,
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "Field": st.column_config.TextColumn(
+                "Field",
+                width="small"
+            ),
+            "Value": st.column_config.TextColumn(
+                "Value",
+                width="large"
+            ),
+        },
+    )
 
     left, right = st.columns(2)
 
@@ -379,19 +515,29 @@ def confirm_submit():
 
 
 # ============================================================
-# UPLOAD
+# UPLOAD / RESET
 # ============================================================
 if st.session_state.state == "ended":
     st.divider()
-    if st.button("Upload"):
-        st.session_state.confirm_open = True
-        st.rerun()
 
+    u, r = st.columns(2)
+
+    with u:
+        if st.button("Upload"):
+            st.session_state.confirm_open = True
+            st.rerun()
+
+    with r:
+        if st.button("Reset"):
+            reset_all()
+            st.rerun()
+
+# Open confirmation modal if requested
 if st.session_state.confirm_open:
     confirm_submit()
+
 
 # ============================================================
 # FOOTER
 # ============================================================
-st.caption(f"Data path: {ROOT_DATA_DIR}\\AllTasks")
-st.caption(f"App version: {APP_VERSION}")
+st.caption(f"\n\nApp version: {APP_VERSION}")
