@@ -16,7 +16,7 @@ from streamlit_autorefresh import st_autorefresh
 # ============================================================
 # APP CONFIG
 # ============================================================
-APP_VERSION = "1.3.3"
+APP_VERSION = "1.3.4"
 
 st.set_page_config(
     page_title="Logistics Support Task Tracker",
@@ -32,9 +32,7 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Work+Sans:wght@400;500;600&display=swap');
 
     @keyframes blink {
-        50% {
-            opacity: 0;
-        }
+        50% { opacity: 0; }
     }
 
     html, body, [class*="css"] {
@@ -46,35 +44,16 @@ st.markdown(
         font-weight: 600;
     }
 
-    .circle-btn button {
-        border-radius: 50%;
-        width: 120px;
-        height: 120px;
-        font-size: 18px;
-        font-weight: 600;
-    }
-
-    .green button {
-        color: #2e7d32;
-        font-weight: 600;
-    }
-
-    .red button {
-        color: #00B19E;
-        font-weight: 600;
-    }
-
     .blink-colon {
         animation: blink 1s steps(1, start) infinite;
     }
-
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 # ============================================================
-# PATH RESOLUTION (ONE LINER, NO DRAMA)
+# PATH RESOLUTION
 # ============================================================
 def get_os_user() -> str:
     return os.getenv("USERNAME") or os.getenv("USER") or "unknown"
@@ -105,8 +84,8 @@ def find_task_tracker_root() -> Path:
     st.error("Task-Tracker folder not found. Make sure CNA SharePoint is synced locally.")
     st.stop()
 
-ROOT_DATA_DIR = find_task_tracker_root()
 
+ROOT_DATA_DIR = find_task_tracker_root()
 TASKS_CSV = ROOT_DATA_DIR / "TasksAndTargets.csv"
 
 ACCOUNTS_XLSX = (
@@ -126,7 +105,7 @@ LOGO_PATH = Path(
 )
 
 # ============================================================
-# PURE HELPERS
+# HELPERS
 # ============================================================
 def now_utc() -> datetime:
     return datetime.now(timezone.utc)
@@ -145,11 +124,21 @@ def format_hhmm(seconds: int) -> str:
     m = (seconds % 3600) // 60
     return f"{h:02d}:{m:02d}"
 
+
+def format_hhmmss(seconds: int) -> str:
+    seconds = max(0, int(seconds))
+    h = seconds // 3600
+    m = (seconds % 3600) // 60
+    s = seconds % 60
+    return f"{h:02d}:{m:02d}:{s:02d}"
+
+
 def format_hh_mm_parts(seconds: int) -> tuple[str, str]:
     seconds = max(0, int(seconds))
     h = seconds // 3600
     m = (seconds % 3600) // 60
     return f"{h:02d}", f"{m:02d}"
+
 
 # ============================================================
 # DATA LOADERS
@@ -177,7 +166,7 @@ def load_accounts(path: Path) -> list[str]:
 
 
 # ============================================================
-# PARQUET WRITER
+# PARQUET
 # ============================================================
 PARQUET_SCHEMA = pa.schema(
     [
@@ -215,6 +204,51 @@ def atomic_write_parquet(df: pd.DataFrame, path: Path) -> None:
     tmp.replace(path)
 
 
+def load_recent_tasks(
+    root: Path,
+    user_key: str,
+    limit: int = 10,
+    max_days_back: int = 14,
+) -> pd.DataFrame:
+    """
+    Load the most recent N tasks for a user, scanning back up to max_days_back.
+    """
+    base = root / "AllTasks" / f"user={user_key}"
+    if not base.exists():
+        return pd.DataFrame()
+
+    parquet_files = []
+
+    # Walk backwards by date, but cap the scan window
+    for year_dir in sorted(base.glob("year=*"), reverse=True):
+        for month_dir in sorted(year_dir.glob("month=*"), reverse=True):
+            for day_dir in sorted(month_dir.glob("day=*"), reverse=True):
+                parquet_files.extend(day_dir.glob("*.parquet"))
+                if len(parquet_files) >= limit * 3:
+                    break
+            if len(parquet_files) >= limit * 3:
+                break
+        if len(parquet_files) >= limit * 3:
+            break
+
+    if not parquet_files:
+        return pd.DataFrame()
+
+    dfs = []
+    for f in sorted(parquet_files, reverse=True):
+        try:
+            dfs.append(pd.read_parquet(f))
+        except Exception:
+            continue
+
+    if not dfs:
+        return pd.DataFrame()
+
+    df = pd.concat(dfs, ignore_index=True)
+    df = df.sort_values("StartTimestampUTC", ascending=False)
+
+    return df.head(limit)
+
 # ============================================================
 # SESSION STATE
 # ============================================================
@@ -234,8 +268,7 @@ DEFAULT_STATE = {
 }
 
 for k, v in DEFAULT_STATE.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
+    st.session_state.setdefault(k, v)
 
 timer_placeholder = st.empty()
 
@@ -246,12 +279,7 @@ def compute_elapsed_seconds() -> int:
     if not st.session_state.start_utc:
         return 0
 
-    now = (
-        st.session_state.end_utc
-        if st.session_state.state == "ended"
-        else now_utc()
-    )
-
+    now = st.session_state.end_utc if st.session_state.state == "ended" else now_utc()
     base = int((now - st.session_state.start_utc).total_seconds())
     paused = int(st.session_state.paused_seconds)
 
@@ -263,8 +291,6 @@ def compute_elapsed_seconds() -> int:
 
 def reset_all() -> None:
     st.session_state.reset_counter += 1
-    st.session_state.pop("notes", None)
-
     st.session_state.state = "idle"
     st.session_state.start_utc = None
     st.session_state.end_utc = None
@@ -310,14 +336,13 @@ if st.session_state.uploaded:
 
 
 # ============================================================
-# USER + TASK SELECTION
+# USER INPUTS
 # ============================================================
 user_login = get_os_user()
 user_display = user_login.capitalize()
 user_key = sanitize_key(user_login)
 
 inputs_locked = st.session_state.state != "idle"
-
 st.text_input("User", value=user_display, disabled=True)
 
 tasks_df = load_tasks(TASKS_CSV)
@@ -357,12 +382,10 @@ cols = st.columns(3)
 
 for col, cadence in zip(cols, CADENCE_ORDER):
     is_selected = st.session_state.selected_cadence == cadence
-    is_locked = st.session_state.state != "idle"
-
     disabled = (
         not task_name
         or cadence not in available_cadences
-        or (is_locked and not is_selected)
+        or (inputs_locked and not is_selected)
     )
 
     with col:
@@ -372,8 +395,7 @@ for col, cadence in zip(cols, CADENCE_ORDER):
             type="primary" if is_selected else "secondary",
             key=f"cad_{cadence}_{st.session_state.reset_counter}",
         ):
-            # Allow change only before the timer starts
-            if not is_locked:
+            if not inputs_locked:
                 st.session_state.selected_cadence = cadence
                 st.rerun()
 
@@ -390,7 +412,7 @@ selected_account = st.selectbox(
 st.text_area("Notes (optional)", key="notes", height=120)
 
 # ============================================================
-# TIMER / TASK CONTROL
+# TIMER
 # ============================================================
 if st.session_state.state == "running":
     with timer_placeholder:
@@ -399,14 +421,11 @@ if st.session_state.state == "running":
 st.session_state.elapsed_seconds = compute_elapsed_seconds()
 
 st.subheader("Task Control")
-
 left, right = st.columns(2)
 
 with left:
     hh, mm = format_hh_mm_parts(st.session_state.elapsed_seconds)
-
-    is_running = st.session_state.state == "running"
-    colon_class = "blink-colon" if is_running else ""
+    colon_class = "blink-colon" if st.session_state.state == "running" else ""
 
     st.markdown(
         f"""
@@ -414,31 +433,25 @@ with left:
             <div style="font-size:32px; font-weight:600;">
                 {hh}<span class="{colon_class}">:</span>{mm}
             </div>
-            <div style="font-size:12px; color:#6b6b6b;">
-                Elapsed Time
-            </div>
+            <div style="font-size:12px; color:#6b6b6b;">Elapsed Time</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 with right:
-    # START (idle)
     if st.session_state.state == "idle":
-        can_start = bool(task_name and st.session_state.selected_cadence)
-        if st.button("Start", disabled=not can_start):
+        if st.button("Start", disabled=not (task_name and st.session_state.selected_cadence)):
             st.session_state.state = "running"
             st.session_state.start_utc = now_utc()
             st.rerun()
 
-    # PAUSE (running)
     elif st.session_state.state == "running":
         if st.button("Pause"):
             st.session_state.state = "paused"
             st.session_state.pause_start_utc = now_utc()
             st.rerun()
 
-    # RESUME (paused)
     elif st.session_state.state == "paused":
         if st.button("Resume"):
             st.session_state.paused_seconds += int(
@@ -448,7 +461,6 @@ with right:
             st.session_state.state = "running"
             st.rerun()
 
-    # END (running or paused)
     if st.session_state.state in ["running", "paused"]:
         if st.button("End"):
             st.session_state.state = "ended"
@@ -465,32 +477,17 @@ def confirm_submit():
             ("User", user_display),
             ("Task Name", task_name),
             ("Cadence", st.session_state.selected_cadence),
-            ("Time", format_hhmm(st.session_state.elapsed_seconds)),
+            ("Time", format_hhmmss(st.session_state.elapsed_seconds)),
             ("Account", selected_account),
             ("Notes", st.session_state.notes),
         ],
         columns=["Field", "Value"],
     )
 
-    st.dataframe(
-        summary,
-        hide_index=True,
-        width="stretch",
-        column_config={
-            "Field": st.column_config.TextColumn(
-                "Field",
-                width="small"
-            ),
-            "Value": st.column_config.TextColumn(
-                "Value",
-                width="large"
-            ),
-        },
-    )
+    st.dataframe(summary, hide_index=True, width="stretch")
 
-    left, right = st.columns(2)
-
-    with left:
+    l, r = st.columns(2)
+    with l:
         if st.button("Submit", type="primary", width="stretch"):
             record = build_task_record(
                 user_login,
@@ -503,8 +500,8 @@ def confirm_submit():
 
             df = pd.DataFrame([record])
             out_dir = build_out_dir(ROOT_DATA_DIR, user_key, st.session_state.start_utc)
-
             fname = f"task_{st.session_state.start_utc:%Y%m%d_%H%M%S}_{record['TaskID'][:8]}.parquet"
+
             atomic_write_parquet(df, out_dir / fname)
 
             st.session_state.uploaded = True
@@ -512,7 +509,7 @@ def confirm_submit():
             reset_all()
             st.rerun()
 
-    with right:
+    with r:
         if st.button("Cancel", width="stretch"):
             st.session_state.confirm_open = False
             st.rerun()
@@ -523,7 +520,6 @@ def confirm_submit():
 # ============================================================
 if st.session_state.state == "ended":
     st.divider()
-
     u, r = st.columns(2)
 
     with u:
@@ -536,9 +532,67 @@ if st.session_state.state == "ended":
             reset_all()
             st.rerun()
 
-# Open confirmation modal if requested
 if st.session_state.confirm_open:
     confirm_submit()
+
+# ============================================================
+# RECENT TASKS (TOGGLE)
+# ============================================================
+st.divider()
+show_recent = st.toggle(
+    "Show recent tasks",
+    value=False,
+    help="Display your most recent logged tasks",
+)
+
+if show_recent:
+    st.subheader("Recent Tasks")
+
+    recent_df = load_recent_tasks(
+        ROOT_DATA_DIR,
+        user_key,
+        limit=10,
+    )
+
+    if recent_df.empty:
+        st.caption("No tasks logged yet today.")
+    else:
+        display_df = recent_df[
+            [
+                "TaskName",
+                "TaskCadence",
+                "DurationSeconds",
+                "CompanyGroup",
+                "EndTimestampUTC",
+            ]
+        ].copy()
+
+        display_df["Duration"] = display_df["DurationSeconds"].apply(format_hhmmss)
+
+        display_df["Completed"] = (
+            pd.to_datetime(display_df["EndTimestampUTC"], utc=True)
+            .dt.tz_convert(None)
+            .dt.strftime("%Y-%m-%d %H:%M")
+        )
+
+        display_df = display_df.rename(
+            columns={
+                "TaskName": "Task",
+                "TaskCadence": "Cadence",
+                "CompanyGroup": "Account",
+                "Completed": "Date"
+            }
+        )
+
+        display_df = display_df[
+            ["Task", "Cadence", "Account", "Date",  "Duration"]
+        ]
+
+        st.dataframe(
+            display_df,
+            hide_index=True,
+            width="stretch",
+        )
 
 
 # ============================================================
