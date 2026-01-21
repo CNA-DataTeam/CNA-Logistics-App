@@ -165,9 +165,9 @@ def get_task_tracker_root() -> Path:
 
 ROOT_DATA_DIR = get_task_tracker_root()
 TASKS_CSV = ROOT_DATA_DIR / "TasksAndTargets.csv"
-LIVE_ACTIVITY_DIR = Path(r"\\Corp-filesrv-01\dfs_920$\Logistics\Task-Tracker\LiveActivity")
-PERSONNEL_DIR = Path(r"\\Corp-filesrv-01\dfs_920$\Logistics\Task-Tracker\Personnel")
-LOGO_PATH = Path(r"\\Corp-filesrv-01\dfs_920$\Reporting\Power BI Branding\CNA-Logo_Greenx4.png")
+LIVE_ACTIVITY_DIR = Path(r"\\therestaurantstore.com\920\Data\Logistics\Task-Tracker\LiveActivity")
+PERSONNEL_DIR = Path(r"\\therestaurantstore.com\920\Data\Logistics\Task-Tracker\Personnel")
+LOGO_PATH = Path(r"\\therestaurantstore.com\920\Data\Reporting\Power BI Branding\CNA-Logo_Greenx4.png")
 
 
 # ============================================================

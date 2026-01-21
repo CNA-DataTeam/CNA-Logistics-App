@@ -13,7 +13,7 @@ from pathlib import Path
 from datetime import date
 
 # Configure logging
-LOG_FILE = Path(r"\\Corp-filesrv-01\dfs_920$\Logistics\Task-Tracker\Logs\StartupLogs.txt")
+LOG_FILE = Path(r"\\therestaurantstore.com\920\Data\Logistics\Task-Tracker\Logs\StartupLogs.txt")
 
 def setup_logging() -> None:
     """Configure logging to write to the log file."""
@@ -63,7 +63,7 @@ def get_paths() -> tuple[Path, Path]:
     task_tracker_root = find_task_tracker_root()
     
     # Use raw string (r"...") for UNC paths to handle backslashes correctly
-    output_dir = Path(r"\\Corp-filesrv-01\dfs_920$\Logistics\Task-Tracker\Personnel")
+    output_dir = Path(r"\\therestaurantstore.com\920\Data\Logistics\Task-Tracker\Personnel")
     
     accounts_xlsx = (
         task_tracker_root.parents[2]
