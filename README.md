@@ -1,170 +1,86 @@
 # Logistics Support Task Tracker
 
-------------------------------------------------------------------------
-
 ## Overview
 
-The **Logistics Support Task Tracker** is a local Streamlit application
-that allows users to:
+The **Logistics Support Task Tracker** is a local Streamlit application used to track logistics support work.
 
--   Select a task and cadence (Daily / Periodic / Weekly)
--   Optionally associate the task with an account
--   Track elapsed time (start / pause / resume / end)
--   Add free-form notes
--   Upload task records as Parquet files to a shared data directory
+Users can:
+- Select a task and cadence (Daily / Weekly / Periodic)
+- Optionally associate a task with an account
+- Track elapsed time (start / pause / resume / end)
+- Add notes
+- Upload task records to a shared data location
 
-The application is: - Version-controlled via GitHub - Updated
-automatically on every run - Installed once per machine - Launched via
-simple batch files
+The app:
+- Runs locally on each user’s machine  
+- Updates automatically on launch  
+- Is started by double-clicking batch files  
+- Requires no command-line or Git usage by users  
 
-------------------------------------------------------------------------
+---
 
-## Repository Structure
+## What You Need Installed (One Time)
 
-    LogisticsSupportTaskTracker/
-    ├── app.py
-    ├── requirements.txt
-    ├── setup.bat
-    ├── Start_Task_Tracker.bat
-    ├── .streamlit/
-    │   ├── config.toml
-    │   └── secrets.toml   # local only, NOT committed
-    ├── scripts/
-    └── README.md
+You must have the following installed on your machine:
 
-------------------------------------------------------------------------
+- **Python 3.11.x** (installed system-wide and on PATH)
+- **Git for Windows** (installed and on PATH)
 
-## Prerequisites (One-Time)
+If any of these are missing, contact IT.
 
-Before installing the app, ensure the following are insatalled on your machine:
+---
 
--   Windows OS
--   Python 3.11.3 (IT Help Needed)
--   Git for Windows
-    Ensure the following selections:
-    - Git from the command line and also from 3rd-party software
-        👉 this is critical (adds Git to PATH)
-    - Use bundled OpenSSH
-    - Use the OpenSSL library
-    - Checkout Windows-style, commit Unix-style line endings
-    - Use MinTTY (default terminal)
--   Access to the GitHub repository
+## First-Time Setup (One Time)
 
-Python and Git must be available on the system PATH (Check with IT).
+1. Create a folder anywhere on your machine
+   (recommended: `C:\Users\yourusername\TaskTracker`)
 
-------------------------------------------------------------------------
+2. Copy these two files into that folder:
+   - `setup.bat`
+   - `Start_Task_Tracker.bat`
 
-## First-Time Installation
+3. Double-click:
+setup.bat
 
-### 1. Clone the Repository
+This will:
+- Download the app from GitHub
+- Create a local Python environment
+- Install all required dependencies
 
-The application is designed to live in a standard location on your
-machine.
-
-### Step 1 --- Create the Projects folder
-
-1.  Open **File Explorer**
-2.  Navigate to **Local Disk (C:)**
-3.  Right-click → **New → Folder**
-4.  Name the folder:
-
-    Projects
-
-You should now have:
-
-    C:\Projects
-
-------------------------------------------------------------------------
-
-### Step 2 --- Open a terminal in the Projects folder
-
-1.  Open the `C:\Projects` folder
-2.  Hold **Shift**
-3.  Right-click inside the folder
-4.  Select **"Open PowerShell window here"** or **"Open in Terminal"**
-
-A terminal window should open with the path set to:
-
-    C:\Projects>
-
-------------------------------------------------------------------------
-
-### Step 3 --- Clone the repository
-
-In the terminal, run:
-
-``` powershell
-git clone https://github.com/CNA-DataTeam/Task-Tracker.git
-```
-
-This will download the application from GitHub and create a new folder:
-
-    C:\Projects\Task Tracker
-
-This folder contains: - the Streamlit application - setup and launch
-scripts - all required configuration files
-
-Once this step is complete, you are ready to proceed with setup.
-
-### 3. Run Setup (One Time)
-
-From:
-
-    C:\Projects\Task Tracker
-
-Double-click:
-
-    setup.bat
-
-This: - Creates the virtual environment - Installs dependencies
-
-------------------------------------------------------------------------
+---
 
 ## Running the Application
 
-Double-click:
-
-    Start_Task_Tracker.bat
+To start the app, double-click:
+Start_Task_Tracker.bat
 
 On every launch, the app:
+- Checks for updates automatically
+- Starts the application
+- Opens your browser
 
-1.  Pulls the latest code from GitHub
-2.  Activates the virtual environment
-3.  Starts Streamlit
-4.  Automatically opens the browser
+---
 
-------------------------------------------------------------------------
+## Secrets File (Required)
 
-## Update Behavior
+Each user must have this file:
+App.streamlit\secrets.toml
 
--   The app updates automatically on launch
--   If GitHub is unavailable, the local version runs
--   No Git interaction is required by users
+This file is local only and not shared.
 
-------------------------------------------------------------------------
+---
 
-## Common Issues
+## Common Fixes
 
-### No secrets found
+- App does not start → Run `setup.bat` again  
+- Browser does not open → Go to `http://localhost:8501`
 
-Ensure `secrets.toml` exists in:
+---
 
-    C:\Projects\Task Tracker\.streamlit\
+## Important Notes
 
-### Virtual environment missing
+- Do **not** edit files inside the `App` folder  
+- Do **not** use Git manually  
+- Do **not** share your App folder with other users  
 
-Re-run:
-
-    setup.bat
-
-------------------------------------------------------------------------
-
-## Versioning
-
-The app version is defined in `app.py`:
-
-``` python
-APP_VERSION = "x.y.z"
-```
-
-Included in uploaded records.
+That’s it. Double-click to use.
