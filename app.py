@@ -179,6 +179,7 @@ def get_task_tracker_root() -> Path:
 
 ROOT_DATA_DIR = get_task_tracker_root()
 TASKS_XLSX = ROOT_DATA_DIR / "TasksAndTargets.xlsx"
+COMPLETED_TASKS_DIR = Path(r"\\therestaurantstore.com\920\Data\Logistics\Task-Tracker\CompletedTasks")
 LIVE_ACTIVITY_DIR = Path(r"\\therestaurantstore.com\920\Data\Logistics\Task-Tracker\LiveActivity")
 PERSONNEL_DIR = Path(r"\\therestaurantstore.com\920\Data\Logistics\Task-Tracker\Personnel")
 LOGO_PATH = Path(r"\\therestaurantstore.com\920\Data\Reporting\Power BI Branding\CNA-Logo_Greenx4.png")
@@ -324,10 +325,10 @@ LIVE_ACTIVITY_SCHEMA = pa.schema(
 # ============================================================
 # PARQUET I/O
 # ============================================================
-def build_out_dir(root: Path, user_key: str, ts: datetime) -> Path:
+def build_out_dir(user_key: str, ts: datetime) -> Path:
     eastern_ts = to_eastern(ts)
     return (
-        root / "AllTasks"
+        COMPLETED_TASKS_DIR
         / f"user={user_key}"
         / f"year={eastern_ts.year}"
         / f"month={eastern_ts.month:02d}"
@@ -479,7 +480,7 @@ def load_recent_tasks(_root: Path, user_key: str | None = None, limit: int = 50)
     Load recent tasks with caching. Uses PyArrow dataset for efficient reading.
     TTL of 30 seconds balances freshness with performance.
     """
-    base = _root / "AllTasks"
+    base = COMPLETED_TASKS_DIR
     if not base.exists():
         return pd.DataFrame()
 
@@ -839,7 +840,7 @@ def confirm_submit(user_login, full_name, user_key, task_name, selected_account)
                 st.session_state.get('submit_partially_complete', False),
             )
             df = pd.DataFrame([record])
-            out_dir = build_out_dir(ROOT_DATA_DIR, user_key, st.session_state.start_utc)
+            out_dir = build_out_dir(user_key, st.session_state.start_utc)
             eastern_start = to_eastern(st.session_state.start_utc)
             fname = f"task_{eastern_start:%Y%m%d_%H%M%S}_{record['TaskID'][:8]}.parquet"
             atomic_write_parquet(df, out_dir / fname)
@@ -1190,35 +1191,14 @@ else:
 
 if not recent_df.empty:
     recent_df["Duration"] = recent_df["DurationSeconds"].apply(format_hhmmss)
-    recent_df["Uploaded"] = (
-        pd.to_datetime(
-            recent_df["EndTimestampUTC"],
-            utc=True,
-            errors="coerce",   # <- critical fix
-        )
-        .apply(lambda x: format_time_ago(x) if pd.notna(x) else "")
-    )
+    recent_df["Uploaded"] = pd.to_datetime(
+        recent_df["EndTimestampUTC"], utc=True
+    ).apply(lambda x: format_time_ago(x))
 
     if "PartiallyComplete" not in recent_df.columns:
-        recent_df["PartiallyComplete"] = pd.NA
+        recent_df["PartiallyComplete"] = pd.Series([pd.NA] * len(recent_df), dtype="boolean")
     else:
-        recent_df["PartiallyComplete"] = (
-            recent_df["PartiallyComplete"]
-            .astype(str)
-            .str.strip()
-            .str.lower()
-            .map({
-                "true": True,
-                "1": True,
-                "yes": True,
-                "y": True,
-                "false": False,
-                "0": False,
-                "no": False,
-                "n": False,
-            })
-            .astype("boolean")
-        )
+        recent_df["PartiallyComplete"] = recent_df["PartiallyComplete"].astype("boolean")
 
     recent_df["Partially Completed?"] = recent_df["PartiallyComplete"].fillna(False).astype(bool)
 
