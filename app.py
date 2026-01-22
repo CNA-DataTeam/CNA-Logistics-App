@@ -10,12 +10,12 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from pathlib import Path
 from functools import lru_cache
+import getpass
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pyarrow.dataset as ds
 from streamlit_autorefresh import st_autorefresh
 import base64
-
 
 # ============================================================
 # APP CONFIG
@@ -138,13 +138,8 @@ st.markdown(get_global_css(), unsafe_allow_html=True)
 # PATH RESOLUTION (cached)
 # ============================================================
 @lru_cache(maxsize=1)
-@lru_cache(maxsize=1)
 def get_os_user() -> str:
-    """
-    Return the OS username/login (e.g., lbulfon). Cached for performance.
-    This value is used for path resolution (C:/Users/<username>/...).
-    """
-    return (os.getenv("USERNAME") or os.getenv("USER") or "unknown").strip()
+    return getpass.getuser()
 
 @lru_cache(maxsize=1)
 def find_task_tracker_root() -> Path:
@@ -433,99 +428,80 @@ def delete_live_activity(user_key: str) -> None:
     except Exception:
         pass
 
-
 @st.cache_data(ttl=15)
 def load_live_activities(_exclude_user_key: str | None = None) -> pd.DataFrame:
-    """
-    Load all live activities using PyArrow dataset for better performance.
-    Cached with 15-second TTL to reduce file I/O while staying reasonably fresh.
-    Note: _exclude_user_key is prefixed with _ to exclude from cache key hashing.
-    """
-    if not LIVE_ACTIVITY_DIR.exists():
-        return pd.DataFrame()
-    
-    files = list(LIVE_ACTIVITY_DIR.glob("user=*.parquet"))
-    if not files:
-        return pd.DataFrame()
-    
-    # Filter files before reading if excluding a user
-    if _exclude_user_key:
-        files = [f for f in files if f.stem.replace("user=", "") != _exclude_user_key]
-    
-    if not files:
-        return pd.DataFrame()
-    
-    try:
-        # Use PyArrow dataset for efficient multi-file reading
-        dataset = ds.dataset(files, format="parquet")
-        table = dataset.to_table()
-        return table.to_pandas()
-    except Exception:
-        # Fallback to individual file reading
-        dfs = []
-        for f in files:
-            try:
-                dfs.append(pd.read_parquet(f))
-            except Exception:
-                pass
-        return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+    base = ROOT_DATA_DIR / "LiveActivity"
 
+    files = list(base.glob("user=*/state=ACTIVE/*.parquet"))
+    if not files:
+        return pd.DataFrame()
+
+    try:
+        needed_cols = [
+            "FullName",
+            "UserLogin",
+            "TaskName",
+            "StartTimestampUTC",
+            "Notes",
+        ]
+
+        dataset = ds.dataset(files, format="parquet")
+        table = dataset.to_table(columns=needed_cols)
+        df = table.to_pandas()
+
+        if _exclude_user_key:
+            df = df[df["UserLogin"] != _exclude_user_key]
+
+        return df
+
+    except Exception as e:
+        st.error(f"Failed to load live activities: {e}")
+        return pd.DataFrame()
 
 # ============================================================
 # COMPLETED TASKS LOADER
 # ============================================================
 @st.cache_data(ttl=30)
 def load_recent_tasks(_root: Path, user_key: str | None = None, limit: int = 50) -> pd.DataFrame:
-    """
-    Load recent tasks with caching. Uses PyArrow dataset for efficient reading.
-    TTL of 30 seconds balances freshness with performance.
-    """
-    base = COMPLETED_TASKS_DIR
-    if not base.exists():
-        return pd.DataFrame()
+    base = _root / "CompletedTasks"
 
     today_eastern = to_eastern(now_utc()).date()
 
-    # Determine which directories to search
-    if user_key:
-        search_paths = [base / f"user={user_key}"]
-    else:
-        search_paths = list(base.glob("user=*"))
+    day_part = (
+        f"year={today_eastern.year}/"
+        f"month={today_eastern.month:02d}/"
+        f"day={today_eastern.day:02d}"
+    )
 
-    files = []
-    for search_path in search_paths:
-        if search_path.exists():
-            today_folder = (
-                search_path
-                / f"year={today_eastern.year}"
-                / f"month={today_eastern.month:02d}"
-                / f"day={today_eastern.day:02d}"
-            )
-            if today_folder.exists():
-                files.extend(today_folder.glob("*.parquet"))
+    if user_key:
+        files = list((base / f"user={user_key}" / day_part).glob("*.parquet"))
+    else:
+        files = list(base.glob(f"user=*/{day_part}/*.parquet"))
 
     if not files:
         return pd.DataFrame()
 
     try:
-        # Use PyArrow dataset for efficient multi-file reading
+        needed_cols = [
+            "StartTimestampUTC",
+            "EndTimestampUTC",
+            "DurationSeconds",
+            "PartiallyComplete",
+            "Notes",
+            "FullName",
+            "UserLogin",
+            "TaskName",
+        ]
+
         dataset = ds.dataset(files, format="parquet")
-        table = dataset.to_table()
+        table = dataset.to_table(columns=needed_cols)
         df = table.to_pandas()
-    except Exception:
-        # Fallback to individual file reading
-        dfs = []
-        for f in files:
-            try:
-                dfs.append(pd.read_parquet(f))
-            except Exception:
-                pass
-        if not dfs:
-            return pd.DataFrame()
-        df = pd.concat(dfs, ignore_index=True)
+
+    except Exception as e:
+        st.error(f"Failed to load recent tasks: {e}")
+        return pd.DataFrame()
 
     return df.sort_values("StartTimestampUTC", ascending=False).head(limit)
-
 
 # ============================================================
 # DATA LOADERS
@@ -618,13 +594,19 @@ def load_tasks(path: str) -> pd.DataFrame:
 
 @st.cache_data(ttl=3600)
 def load_accounts(path: str) -> list[str]:
-    """Load accounts from parquet. Path as string for cache key compatibility."""
     parquet_files = list(Path(path).glob("*.parquet"))
     if not parquet_files:
         return []
-    df = pd.read_parquet(parquet_files[0])
-    return df["Company Group USE"].dropna().astype(str).str.strip().unique().tolist()
 
+    df = pd.read_parquet(parquet_files[0], columns=["Company Group USE"])
+    return (
+        df["Company Group USE"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .unique()
+        .tolist()
+    )
 
 # ============================================================
 # SESSION STATE INITIALIZATION
@@ -1126,16 +1108,17 @@ def live_activity_section():
         )
         st.caption("Tasks currently in progress by other team members")
         
-        live_display_df = live_activities_df.copy()
-        
+        live_display_df = live_activities_df[
+            ["StartTimestampUTC", "FullName", "UserLogin", "TaskName", "Notes"]
+        ].copy()
+
+        start_utc = pd.to_datetime(live_display_df["StartTimestampUTC"], utc=True)
+
         live_display_df["Start Time"] = (
-            pd.to_datetime(live_display_df["StartTimestampUTC"], utc=True)
-            .dt.tz_convert(EASTERN_TZ)
+            start_utc.dt.tz_convert(EASTERN_TZ)
             .dt.strftime("%#I:%M %p")
             .str.lower()
-        ) + " - " + pd.to_datetime(
-            live_display_df["StartTimestampUTC"], utc=True
-        ).apply(lambda x: format_time_ago(x))
+        ) + " - " + start_utc.apply(lambda x: format_time_ago(x))
         
         if "Notes" not in live_display_df.columns:
             live_display_df["Notes"] = ""
