@@ -138,18 +138,13 @@ st.markdown(get_global_css(), unsafe_allow_html=True)
 # PATH RESOLUTION (cached)
 # ============================================================
 @lru_cache(maxsize=1)
+@lru_cache(maxsize=1)
 def get_os_user() -> str:
     """
-    Best-effort attempt to retrieve the user's full display name.
-    Falls back to username if unavailable. Cached for performance.
+    Return the OS username/login (e.g., lbulfon). Cached for performance.
+    This value is used for path resolution (C:/Users/<username>/...).
     """
-    for key in ("DISPLAYNAME", "FULLNAME"):
-        value = os.getenv(key)
-        if value:
-            return value.strip()
-
-    user = os.getenv("USERNAME") or os.getenv("USER") or "unknown"
-    return user.replace(".", " ").replace("_", " ").title()
+    return (os.getenv("USERNAME") or os.getenv("USER") or "unknown").strip()
 
 @lru_cache(maxsize=1)
 def find_task_tracker_root() -> Path:
@@ -183,7 +178,7 @@ def get_task_tracker_root() -> Path:
 
 
 ROOT_DATA_DIR = get_task_tracker_root()
-TASKS_CSV = ROOT_DATA_DIR / "TasksAndTargets.csv"
+TASKS_XLSX = ROOT_DATA_DIR / "TasksAndTargets.xlsx"
 LIVE_ACTIVITY_DIR = Path(r"\\therestaurantstore.com\920\Data\Logistics\Task-Tracker\LiveActivity")
 PERSONNEL_DIR = Path(r"\\therestaurantstore.com\920\Data\Logistics\Task-Tracker\Personnel")
 LOGO_PATH = Path(r"\\therestaurantstore.com\920\Data\Reporting\Power BI Branding\CNA-Logo_Greenx4.png")
@@ -291,6 +286,7 @@ PARQUET_SCHEMA = pa.schema(
     [
         ("TaskID", pa.string()),
         ("UserLogin", pa.string()),
+        ("FullName", pa.string()),
         ("TaskName", pa.string()),
         ("TaskCadence", pa.string()),
         ("CompanyGroup", pa.string()),
@@ -310,6 +306,7 @@ LIVE_ACTIVITY_SCHEMA = pa.schema(
     [
         ("UserKey", pa.string()),
         ("UserLogin", pa.string()),
+        ("FullName", pa.string()),
         ("TaskName", pa.string()),
         ("TaskCadence", pa.string()),
         ("CompanyGroup", pa.string()),
@@ -349,7 +346,7 @@ def atomic_write_parquet(df: pd.DataFrame, path: Path, schema: pa.Schema = PARQU
 # ============================================================
 # LIVE ACTIVITY FUNCTIONS
 # ============================================================
-def save_live_activity(user_key: str, user: str, task_name: str, cadence: str,
+def save_live_activity(user_key: str, user_login: str, full_name: str, task_name: str, cadence: str,
                        account: str, covering_for: str, notes: str, start_utc: datetime,
                        state: str = "running", paused_seconds: int = 0,
                        pause_start_utc: datetime = None) -> None:
@@ -360,7 +357,8 @@ def save_live_activity(user_key: str, user: str, task_name: str, cadence: str,
     
     record = {
         "UserKey": user_key,
-        "UserLogin": user,
+        "UserLogin": user_login,
+        "FullName": full_name or None,
         "TaskName": task_name,
         "TaskCadence": cadence,
         "CompanyGroup": account or None,
@@ -409,6 +407,7 @@ def load_own_live_activity(user_key: str) -> dict | None:
             return None
         row = df.iloc[0]
         return {
+            "full_name": row.get("FullName") or "",
             "task_name": row.get("TaskName"),
             "cadence": row.get("TaskCadence"),
             "account": row.get("CompanyGroup") or "",
@@ -531,14 +530,90 @@ def load_recent_tasks(_root: Path, user_key: str | None = None, limit: int = 50)
 # DATA LOADERS
 # ============================================================
 @st.cache_data(ttl=3600)
-def load_tasks(path: str) -> pd.DataFrame:
-    """Load tasks from CSV. Path as string for cache key compatibility."""
-    df = pd.read_csv(path)
-    df = df[df["IsActive"].astype(int) == 1].copy()
-    df["TaskName"] = df["TaskName"].str.strip()
-    df["TaskCadence"] = df["TaskCadence"].str.strip().str.title()
-    return df
+def load_user_fullname_map(path: str) -> dict[str, str]:
+    """
+    Load Users sheet mapping:
+      - 'User' -> 'Full Name'
+    Returns dict keyed by normalized user login.
+    """
+    try:
+        df = pd.read_excel(path, sheet_name="Users")
+    except Exception:
+        return {}
 
+    if df.empty:
+        return {}
+
+    cols = {c.strip().lower(): c for c in df.columns}
+    user_col = cols.get("user")
+    full_col = cols.get("full name") or cols.get("fullname")
+
+    if not user_col or not full_col:
+        return {}
+
+    out: dict[str, str] = {}
+    for u, fn in zip(df[user_col], df[full_col]):
+        if pd.isna(u):
+            continue
+        u_norm = str(u).strip().lower()
+        if not u_norm:
+            continue
+        fn_str = "" if pd.isna(fn) else str(fn).strip()
+        if fn_str:
+            out[u_norm] = fn_str
+
+    return out
+
+def get_full_name_for_user(user_login: str) -> str:
+    """
+    Map OS user login to Full Name using the Users table.
+    If no match, return the original user_login.
+    """
+    m = load_user_fullname_map(str(TASKS_XLSX))
+    return m.get(str(user_login).strip().lower(), user_login)
+
+@st.cache_data(ttl=3600)
+def load_all_user_full_names(path: str) -> list[str]:
+    """
+    Load all Full Names from the Users sheet.
+    Returns a sorted list of unique full names.
+    """
+    try:
+        df = pd.read_excel(path, sheet_name="Users")
+    except Exception:
+        return []
+
+    if df.empty or "Full Name" not in df.columns:
+        return []
+
+    names = (
+        df["Full Name"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+    )
+
+    return sorted(n for n in names.unique() if n)
+
+@st.cache_data(ttl=3600)
+def load_tasks(path: str) -> pd.DataFrame:
+    """
+    Load tasks from the Excel 'Tasks' sheet.
+    """
+    try:
+        df = pd.read_excel(path, sheet_name="Tasks")
+    except Exception as e:
+        st.error(f"Failed to read Tasks sheet: {e}")
+        return pd.DataFrame()
+
+    if df.empty:
+        return df
+
+    df = df[df["IsActive"].astype(int) == 1].copy()
+    df["TaskName"] = df["TaskName"].astype(str).str.strip()
+    df["TaskCadence"] = df["TaskCadence"].astype(str).str.strip().str.title()
+
+    return df
 
 @st.cache_data(ttl=3600)
 def load_accounts(path: str) -> list[str]:
@@ -690,11 +765,12 @@ def end_task():
         delete_live_activity(st.session_state.current_user_key)
 
 
-def build_task_record(user, task_name, cadence, account, covering_for, notes, duration_seconds, partially_complete):
+def build_task_record(user_login, full_name, task_name, cadence, account, covering_for, notes, duration_seconds, partially_complete):
     is_covering_for = bool(covering_for and covering_for.strip())
     return {
         "TaskID": str(uuid.uuid4()),
-        "UserLogin": user,
+        "UserLogin": user_login,
+        "FullName": full_name or None,
         "TaskName": task_name,
         "TaskCadence": cadence,
         "CompanyGroup": account or None,
@@ -714,9 +790,9 @@ def build_task_record(user, task_name, cadence, account, covering_for, notes, du
 # CONFIRMATION MODAL
 # ============================================================
 @st.dialog("Submit?")
-def confirm_submit(user, user_key, task_name, selected_account):
+def confirm_submit(user_login, full_name, user_key, task_name, selected_account):
     """Confirmation dialog with parameters to avoid global lookups."""
-    st.caption(f"**User:** {user}")
+    st.caption(f"**User:** {full_name}")
     st.caption(f"**Task:** {task_name}")
     st.caption(f"**Cadence:** {st.session_state.selected_cadence}")
     
@@ -752,7 +828,8 @@ def confirm_submit(user, user_key, task_name, selected_account):
     with l:
         if st.button("Submit", type="primary", width="stretch"):
             record = build_task_record(
-                user,
+                user_login,
+                full_name,
                 task_name,
                 st.session_state.selected_cadence,
                 selected_account,
@@ -815,32 +892,31 @@ spacer_l, left_col, l_space, mid_col, r_space, right_col, spacer_r = st.columns(
 
 # LEFT COLUMN
 with left_col:
-    user = get_os_user().capitalize()
-    user_key = sanitize_key(user)
-    
+    user_login = get_os_user()
+    full_name = get_full_name_for_user(user_login)
+
+    user_key = sanitize_key(user_login)
     st.session_state.current_user_key = user_key
 
     inputs_locked = st.session_state.state != "idle"
-    st.text_input("User", value=user, disabled=True)
-    
-    covering_options = [""]
+    st.text_input("User", value=full_name, disabled=True)
+
+    all_users = load_all_user_full_names(str(TASKS_XLSX))
+
+    # Exclude the current user (by full name)
+    covering_options = [""] + [
+        u for u in all_users if u != full_name
+    ]
+
     covering_key = f"covering_{st.session_state.reset_counter}"
-    if st.session_state.restored_covering_for and covering_key not in st.session_state:
-        if st.session_state.restored_covering_for in covering_options:
-            st.session_state[covering_key] = st.session_state.restored_covering_for
-    
-    covering_toggle = st.toggle("Covering For Someone?", value=False, key="covering_toggle")
-    if covering_toggle:
-        covering_for = st.selectbox(
-            "",
-            covering_options,
-            disabled=inputs_locked,
-            key=covering_key,
-            label_visibility="collapsed"
-        )
-    else:
-        covering_for = ""
-    st.session_state.covering_for = covering_for
+
+    # Restore selection if applicable
+    if (
+        st.session_state.restored_covering_for
+        and covering_key not in st.session_state
+        and st.session_state.restored_covering_for in covering_options
+    ):
+        st.session_state[covering_key] = st.session_state.restored_covering_for
 
     account_options = [""] + load_accounts(str(PERSONNEL_DIR))
     
@@ -855,9 +931,22 @@ with left_col:
         key=acct_key,
     )
 
+    covering_toggle = st.toggle("Covering For Someone?", value=False, key="covering_toggle")
+    if covering_toggle:
+        covering_for = st.selectbox(
+            "",
+            covering_options,
+            disabled=inputs_locked,
+            key=covering_key,
+            label_visibility="collapsed"
+        )
+    else:
+        covering_for = ""
+    st.session_state.covering_for = covering_for
+
 # MIDDLE COLUMN
 with mid_col:
-    tasks_df = load_tasks(str(TASKS_CSV))
+    tasks_df = load_tasks(str(TASKS_XLSX))
     task_options = [""] + sorted(tasks_df["TaskName"].unique())
     
     task_key = f"task_{st.session_state.reset_counter}"
@@ -921,7 +1010,8 @@ if (st.session_state.state in ("running", "paused") and
     
     save_live_activity(
         user_key=user_key,
-        user=user,
+        user_login=user_login,
+        full_name=full_name,
         task_name=task_name,
         cadence=st.session_state.selected_cadence,
         account=selected_account,
@@ -932,6 +1022,7 @@ if (st.session_state.state in ("running", "paused") and
         paused_seconds=st.session_state.paused_seconds,
         pause_start_utc=st.session_state.pause_start_utc,
     )
+
     st.session_state.live_activity_saved = True
     st.session_state.live_task_name = task_name
     st.session_state.live_cadence = st.session_state.selected_cadence
@@ -1011,7 +1102,7 @@ with right_col:
 # ============================================================
 if st.session_state.confirm_open and not st.session_state.confirm_rendered:
     st.session_state.confirm_rendered = True
-    confirm_submit(user, user_key, task_name, selected_account)
+    confirm_submit(user_login, full_name, user_key, task_name, selected_account)
 
 # ============================================================
 # LIVE ACTIVITY SECTION (fragment with caching)
@@ -1049,22 +1140,31 @@ def live_activity_section():
             live_display_df["Notes"] = ""
         live_display_df["Notes"] = live_display_df["Notes"].fillna("")
         
-        display_cols = live_display_df.rename(
-            columns={
-                "UserLogin": "User",
-                "TaskName": "Task",
-            }
-        )[["User", "Task", "Start Time", "Notes"]]
-        
-        st.dataframe(
-            display_cols,
-            hide_index=True,
-            width="stretch",
-            column_config={
-                "Notes": st.column_config.TextColumn("Notes", width="medium"),
-                "Start Time": st.column_config.TextColumn("Start Time", width="small"),
-            },
+        # --- Resolve display user safely ---
+        if "FullName" in live_display_df.columns:
+            live_display_df["User"] = (
+                live_display_df["FullName"]
+                .fillna("")
+                .astype(str)
+                .str.strip()
+            )
+        else:
+            live_display_df["User"] = ""
+
+        mask_blank = live_display_df["User"].eq("")
+        live_display_df.loc[mask_blank, "User"] = (
+            live_display_df.loc[mask_blank, "UserLogin"]
+            .fillna("")
+            .astype(str)
         )
+
+        # --- Final display frame (explicit, no rename magic) ---
+        display_cols = pd.DataFrame({
+            "User": live_display_df["User"],
+            "Task": live_display_df["TaskName"],
+            "Start Time": live_display_df["Start Time"],
+            "Notes": live_display_df["Notes"],
+        })
 
 live_activity_section()
 
@@ -1090,14 +1190,35 @@ else:
 
 if not recent_df.empty:
     recent_df["Duration"] = recent_df["DurationSeconds"].apply(format_hhmmss)
-    recent_df["Uploaded"] = pd.to_datetime(
-        recent_df["EndTimestampUTC"], utc=True
-    ).apply(lambda x: format_time_ago(x))
+    recent_df["Uploaded"] = (
+        pd.to_datetime(
+            recent_df["EndTimestampUTC"],
+            utc=True,
+            errors="coerce",   # <- critical fix
+        )
+        .apply(lambda x: format_time_ago(x) if pd.notna(x) else "")
+    )
 
     if "PartiallyComplete" not in recent_df.columns:
-        recent_df["PartiallyComplete"] = pd.Series([pd.NA] * len(recent_df), dtype="boolean")
+        recent_df["PartiallyComplete"] = pd.NA
     else:
-        recent_df["PartiallyComplete"] = recent_df["PartiallyComplete"].astype("boolean")
+        recent_df["PartiallyComplete"] = (
+            recent_df["PartiallyComplete"]
+            .astype(str)
+            .str.strip()
+            .str.lower()
+            .map({
+                "true": True,
+                "1": True,
+                "yes": True,
+                "y": True,
+                "false": False,
+                "0": False,
+                "no": False,
+                "n": False,
+            })
+            .astype("boolean")
+        )
 
     recent_df["Partially Completed?"] = recent_df["PartiallyComplete"].fillna(False).astype(bool)
 
@@ -1105,8 +1226,15 @@ if not recent_df.empty:
         recent_df["Notes"] = ""
     recent_df["Notes"] = recent_df["Notes"].fillna("")
 
+    if "FullName" not in recent_df.columns:
+        recent_df["FullName"] = ""
+
+    recent_df["DisplayUser"] = recent_df["FullName"].fillna("").astype(str).str.strip()
+    mask_blank = recent_df["DisplayUser"].eq("")
+    recent_df.loc[mask_blank, "DisplayUser"] = recent_df.loc[mask_blank, "UserLogin"].fillna("").astype(str)
+
     display_df = recent_df.rename(
-        columns={"TaskName": "Task", "UserLogin": "User"}
+        columns={"TaskName": "Task", "DisplayUser": "User"}
     )[["User", "Task", "Partially Completed?", "Uploaded", "Duration", "Notes"]]
 
     st.dataframe(
