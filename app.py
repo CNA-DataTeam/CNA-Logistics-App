@@ -865,7 +865,7 @@ if st.session_state.uploaded:
 # ============================================================
 # MAIN LAYOUT
 # ============================================================
-spacer_l, left_col, right_col, spacer_r = st.columns([0.5, 4, 2, 0.5])
+spacer_l, left_col, ll, right_col, spacer_r = st.columns([0.4, 4.2, 0.2, 2.0, 0.4])
 with left_col:
     st.subheader("Task Definition", anchor=False, text_alignment="center")
 with right_col:
