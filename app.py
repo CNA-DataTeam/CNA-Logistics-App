@@ -6,6 +6,7 @@ import pandas as pd
 import uuid
 import os
 import re
+import config
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from pathlib import Path
@@ -20,7 +21,7 @@ import base64
 # ============================================================
 # APP CONFIG
 # ============================================================
-APP_VERSION = "1.7.7" 
+APP_VERSION = "1.8.1" 
 
 # Eastern timezone for display
 EASTERN_TZ = ZoneInfo("America/New_York")
@@ -142,26 +143,13 @@ def get_os_user() -> str:
     return getpass.getuser()
 
 @lru_cache(maxsize=1)
-def find_task_tracker_root() -> Path:
-    user = get_os_user()
-    roots = [
-        Path(f"C:/Users/{user}/clarkinc.biz"),
-        Path(f"C:/Users/{user}/OneDrive - clarkinc.biz"),
-        Path(f"C:/Users/{user}/OneDrive"),
-    ]
-    libraries = [
-        "Clark National Accounts - Documents",
-        "Documents - Clark National Accounts",
-    ]
-    rel = Path("Logistics and Supply Chain/Logistics Support/Task-Tracker")
-
-    for root in roots:
-        for lib in libraries:
-            p = root / lib / rel
+def find_task_tracker_root() -> Path | None:
+    for root in config.POTENTIAL_ROOTS:
+        for lib in config.DOCUMENT_LIBRARIES:
+            p = root / lib / config.RELATIVE_APP_PATH
             if p.exists():
                 return p
-
-    return None  # Return None instead of stopping here
+    return None
 
 def get_task_tracker_root() -> Path:
     """Get root with error handling for Streamlit context."""
@@ -173,12 +161,11 @@ def get_task_tracker_root() -> Path:
 
 
 ROOT_DATA_DIR = get_task_tracker_root()
-TASKS_XLSX = ROOT_DATA_DIR / "TasksAndTargets.xlsx"
-COMPLETED_TASKS_DIR = Path(r"\\therestaurantstore.com\920\Data\Logistics\Task-Tracker\CompletedTasks")
-LIVE_ACTIVITY_DIR = Path(r"\\therestaurantstore.com\920\Data\Logistics\Task-Tracker\LiveActivity")
-PERSONNEL_DIR = Path(r"\\therestaurantstore.com\920\Data\Logistics\Task-Tracker\Personnel")
-LOGO_PATH = Path(r"\\therestaurantstore.com\920\Data\Reporting\Power BI Branding\CNA-Logo_Greenx4.png")
-
+TASKS_XLSX = ROOT_DATA_DIR / config.TASKS_XLSX_NAME
+COMPLETED_TASKS_DIR = config.COMPLETED_TASKS_DIR
+LIVE_ACTIVITY_DIR   = config.LIVE_ACTIVITY_DIR
+PERSONNEL_DIR       = config.PERSONNEL_DIR
+LOGO_PATH           = config.LOGO_PATH
 
 # ============================================================
 # HELPERS (with caching where beneficial)
@@ -984,33 +971,6 @@ with mid_col:
         
     st.text_area("Notes (optional)", key="notes", height=120)
 
-# ============================================================
-# SAVE LIVE ACTIVITY (after form values are available)
-# ============================================================
-if (st.session_state.state in ("running", "paused") and 
-    not st.session_state.live_activity_saved and
-    task_name and st.session_state.selected_cadence):
-    
-    save_live_activity(
-        user_key=user_key,
-        user_login=user_login,
-        full_name=full_name,
-        task_name=task_name,
-        cadence=st.session_state.selected_cadence,
-        account=selected_account,
-        covering_for=st.session_state.covering_for,
-        notes=st.session_state.notes,
-        start_utc=st.session_state.start_utc,
-        state=st.session_state.state,
-        paused_seconds=st.session_state.paused_seconds,
-        pause_start_utc=st.session_state.pause_start_utc,
-    )
-
-    st.session_state.live_activity_saved = True
-    st.session_state.live_task_name = task_name
-    st.session_state.live_cadence = st.session_state.selected_cadence
-    st.session_state.live_account = selected_account
-
 # RIGHT COLUMN
 with right_col:
     st.session_state.elapsed_seconds = compute_elapsed_seconds()
@@ -1079,6 +1039,33 @@ with right_col:
                 key="partially_complete",
                 label_visibility="collapsed",
             )
+
+# ============================================================
+# SAVE LIVE ACTIVITY (after form values are available)
+# ============================================================
+if (st.session_state.state in ("running", "paused") and 
+    not st.session_state.live_activity_saved and
+    task_name and st.session_state.selected_cadence):
+    
+    save_live_activity(
+        user_key=user_key,
+        user_login=user_login,
+        full_name=full_name,
+        task_name=task_name,
+        cadence=st.session_state.selected_cadence,
+        account=selected_account,
+        covering_for=st.session_state.covering_for,
+        notes=st.session_state.notes,
+        start_utc=st.session_state.start_utc,
+        state=st.session_state.state,
+        paused_seconds=st.session_state.paused_seconds,
+        pause_start_utc=st.session_state.pause_start_utc,
+    )
+
+    st.session_state.live_activity_saved = True
+    st.session_state.live_task_name = task_name
+    st.session_state.live_cadence = st.session_state.selected_cadence
+    st.session_state.live_account = selected_account
 
 # ============================================================
 # OPEN CONFIRMATION MODAL (ONE-SHOT)
