@@ -450,7 +450,7 @@ def load_live_activities(_exclude_user_key: str | None = None) -> pd.DataFrame:
 # ============================================================
 @st.cache_data(ttl=30)
 def load_recent_tasks(_root: Path, user_key: str | None = None, limit: int = 50) -> pd.DataFrame:
-    base = _root / "CompletedTasks"
+    base = _root
 
     today_eastern = to_eastern(now_utc()).date()
 
@@ -1155,9 +1155,9 @@ with col_toggle:
 
 # Use cached function
 if show_all_users:
-    recent_df = load_recent_tasks(ROOT_DATA_DIR, user_key=None, limit=50)
+    recent_df = load_recent_tasks(COMPLETED_TASKS_DIR, user_key=None, limit=50)
 else:
-    recent_df = load_recent_tasks(ROOT_DATA_DIR, user_key=user_key, limit=50)
+    recent_df = load_recent_tasks(COMPLETED_TASKS_DIR, user_key=user_key, limit=50)
 
 if not recent_df.empty:
     recent_df["Duration"] = recent_df["DurationSeconds"].apply(format_hhmmss)
