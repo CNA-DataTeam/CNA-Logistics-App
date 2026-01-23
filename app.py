@@ -417,9 +417,9 @@ def delete_live_activity(user_key: str) -> None:
 
 @st.cache_data(ttl=15)
 def load_live_activities(_exclude_user_key: str | None = None) -> pd.DataFrame:
-    base = ROOT_DATA_DIR / "LiveActivity"
+    base = LIVE_ACTIVITY_DIR
 
-    files = list(base.glob("user=*/state=ACTIVE/*.parquet"))
+    files = list(base.glob("user=*.parquet"))
     if not files:
         return pd.DataFrame()
 
@@ -826,6 +826,70 @@ def confirm_submit(user_login, full_name, user_key, task_name, selected_account)
             st.session_state.confirm_rendered = False
             st.rerun()
 
+# ============================================================
+# LIVE ACTIVITY SECTION DEFINITION
+# ============================================================
+@st.fragment(run_every=30)
+def live_activity_section():
+    # Use cached function - exclude current user
+    live_activities_df = load_live_activities(_exclude_user_key=user_key)
+
+    if not live_activities_df.empty:
+        st.divider()
+        st.markdown(
+            """
+            <h3 style="margin-bottom: 0;">
+                <span class="live-activity-pulse"></span>
+                Live Activity
+            </h3>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.caption("Tasks currently in progress by other team members")
+        
+        live_display_df = live_activities_df[
+            ["StartTimestampUTC", "FullName", "UserLogin", "TaskName", "Notes"]
+        ].copy()
+
+        start_utc = pd.to_datetime(live_display_df["StartTimestampUTC"], utc=True)
+
+        live_display_df["Start Time"] = (
+            start_utc.dt.tz_convert(EASTERN_TZ)
+            .dt.strftime("%#I:%M %p")
+            .str.lower()
+        ) + " - " + start_utc.apply(lambda x: format_time_ago(x))
+        
+        if "Notes" not in live_display_df.columns:
+            live_display_df["Notes"] = ""
+        live_display_df["Notes"] = live_display_df["Notes"].fillna("")
+        
+        # --- Resolve display user safely ---
+        if "FullName" in live_display_df.columns:
+            live_display_df["User"] = (
+                live_display_df["FullName"]
+                .fillna("")
+                .astype(str)
+                .str.strip()
+            )
+        else:
+            live_display_df["User"] = ""
+
+        mask_blank = live_display_df["User"].eq("")
+        live_display_df.loc[mask_blank, "User"] = (
+            live_display_df.loc[mask_blank, "UserLogin"]
+            .fillna("")
+            .astype(str)
+        )
+
+        # --- Final display frame (explicit, no rename magic) ---
+        display_cols = pd.DataFrame({
+            "User": live_display_df["User"],
+            "Task": live_display_df["TaskName"],
+            "Start Time": live_display_df["Start Time"],
+            "Notes": live_display_df["Notes"],
+        })
+
+        st.dataframe(display_cols, hide_index=True, width="stretch")
 
 # ============================================================
 # HEADER
@@ -1074,68 +1138,6 @@ if st.session_state.confirm_open and not st.session_state.confirm_rendered:
     st.session_state.confirm_rendered = True
     confirm_submit(user_login, full_name, user_key, task_name, selected_account)
 
-# ============================================================
-# LIVE ACTIVITY SECTION (fragment with caching)
-# ============================================================
-@st.fragment(run_every=30)
-def live_activity_section():
-    # Use cached function - exclude current user
-    live_activities_df = load_live_activities(_exclude_user_key=user_key)
-
-    if not live_activities_df.empty:
-        st.divider()
-        st.markdown(
-            """
-            <h3 style="margin-bottom: 0;">
-                <span class="live-activity-pulse"></span>
-                Live Activity
-            </h3>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.caption("Tasks currently in progress by other team members")
-        
-        live_display_df = live_activities_df[
-            ["StartTimestampUTC", "FullName", "UserLogin", "TaskName", "Notes"]
-        ].copy()
-
-        start_utc = pd.to_datetime(live_display_df["StartTimestampUTC"], utc=True)
-
-        live_display_df["Start Time"] = (
-            start_utc.dt.tz_convert(EASTERN_TZ)
-            .dt.strftime("%#I:%M %p")
-            .str.lower()
-        ) + " - " + start_utc.apply(lambda x: format_time_ago(x))
-        
-        if "Notes" not in live_display_df.columns:
-            live_display_df["Notes"] = ""
-        live_display_df["Notes"] = live_display_df["Notes"].fillna("")
-        
-        # --- Resolve display user safely ---
-        if "FullName" in live_display_df.columns:
-            live_display_df["User"] = (
-                live_display_df["FullName"]
-                .fillna("")
-                .astype(str)
-                .str.strip()
-            )
-        else:
-            live_display_df["User"] = ""
-
-        mask_blank = live_display_df["User"].eq("")
-        live_display_df.loc[mask_blank, "User"] = (
-            live_display_df.loc[mask_blank, "UserLogin"]
-            .fillna("")
-            .astype(str)
-        )
-
-        # --- Final display frame (explicit, no rename magic) ---
-        display_cols = pd.DataFrame({
-            "User": live_display_df["User"],
-            "Task": live_display_df["TaskName"],
-            "Start Time": live_display_df["Start Time"],
-            "Notes": live_display_df["Notes"],
-        })
 
 live_activity_section()
 

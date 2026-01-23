@@ -583,3 +583,507 @@ Traceback (most recent call last):
     indexer = non_nan_idx[non_nans.argsort(kind=kind)]
                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 TypeError: '<' not supported between instances of 'str' and 'Timestamp'
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://10.0.0.32:8501
+  External URL: http://73.101.142.204:8501
+
+2026-01-22 16:34:36.843 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 1163, in <module>
+    recent_df = load_recent_tasks(ROOT_DATA_DIR, user_key=None, limit=50)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 281, in __call__
+    return self._get_or_create_cached_value(args, kwargs, spinner_message)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 326, in _get_or_create_cached_value
+    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 385, in _handle_cache_miss
+    computed_value = self._info.func(*func_args, **func_kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 502, in load_recent_tasks
+    return df.sort_values("StartTimestampUTC", ascending=False).head(limit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\pandas\core\frame.py", line 7222, in sort_values
+    indexer = nargsort(
+              ^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\pandas\core\sorting.py", line 439, in nargsort
+    indexer = non_nan_idx[non_nans.argsort(kind=kind)]
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: '<' not supported between instances of 'str' and 'Timestamp'
+2026-01-22 16:35:09.292 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 1187, in <module>
+    recent_df = load_recent_tasks(ROOT_DATA_DIR, user_key=None, limit=50)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 281, in __call__
+    return self._get_or_create_cached_value(args, kwargs, spinner_message)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 326, in _get_or_create_cached_value
+    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\caching\cache_utils.py", line 385, in _handle_cache_miss
+    computed_value = self._info.func(*func_args, **func_kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 526, in load_recent_tasks
+    return df.sort_values("StartTimestampUTC", ascending=False).head(limit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\pandas\core\frame.py", line 7222, in sort_values
+    indexer = nargsort(
+              ^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\pandas\core\sorting.py", line 439, in nargsort
+    indexer = non_nan_idx[non_nans.argsort(kind=kind)]
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: '<' not supported between instances of 'str' and 'Timestamp'
+2026-01-22 16:47:57.573 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 937, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 16:47:59.422 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 937, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 16:48:01.323 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 937, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 16:48:02.927 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 937, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 16:48:05.060 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 937, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 16:48:06.151 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 937, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 16:48:08.403 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 937, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 16:48:10.165 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 937, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 16:48:55.071 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 937, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 16:48:58.077 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 937, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 16:49:02.134 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 937, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 17:13:16.022 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 96, in <module>
+    ROOT_DATA_DIR = resolve_root_data_dir()
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 93, in resolve_root_data_dir
+    raise FileNotFoundError("No valid Task Tracker data root found.")
+FileNotFoundError: No valid Task Tracker data root found.
+2026-01-22 17:27:12.960 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 919, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 17:27:14.426 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 919, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 17:44:58.840 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 919, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 17:45:00.691 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 919, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2026-01-22 17:45:01.782 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 995, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "C:\Users\lbulfon\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 688, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 672, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\app.py", line 919, in <module>
+    covering_for = st.selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 532, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 471, in selectbox
+    return self._selectbox(
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\widgets\selectbox.py", line 516, in _selectbox
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\Users\lbulfon\MyProjects\Task-Tracker\App\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://10.0.0.32:8501
+  External URL: http://73.101.142.204:8501
+
