@@ -147,7 +147,7 @@ with col1:
 with col2:
     st.page_link(
         "pages/task-tracker-analytics.py",
-        label="**Tracker**",
+        label="**Analytics**",
         
         icon="📊",
     )
