@@ -69,18 +69,6 @@ from streamlit_autorefresh import st_autorefresh
 # Page configuration
 st.set_page_config(page_title="Task Tracker", layout="wide")
 
-# Hide Streamlit default header and footer for this page
-st.markdown(
-    """
-    <style>
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    .block-container {padding-top: 1rem;}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
 # Apply global styling
 st.markdown(utils.get_global_css(), unsafe_allow_html=True)
 
@@ -307,7 +295,7 @@ def live_activity_section():
         st.caption("Tasks currently in progress by other team members")
         live_display_df = live_activities_df[["StartTimestampUTC", "FullName", "UserLogin", "TaskName", "Notes"]].copy()
         start_utc = pd.to_datetime(live_display_df["StartTimestampUTC"], utc=True)
-        live_display_df["Start Time"] = start_utc.dt.tz_convert(utils.EASTERN_TZ).dt.strftime("%-I:%M %p").str.lower() + " - " + start_utc.apply(lambda x: utils.format_time_ago(x))
+        live_display_df["Start Time"] = start_utc.dt.tz_convert(utils.EASTERN_TZ).dt.strftime("%#I:%M %p").str.lower() + " - " + start_utc.apply(lambda x: utils.format_time_ago(x))
         if "Notes" not in live_display_df.columns:
             live_display_df["Notes"] = ""
         live_display_df["Notes"] = live_display_df["Notes"].fillna("")
@@ -330,7 +318,7 @@ st.markdown(
     f"""
     <div class="header-row">
         <img class="header-logo" src="data:image/png;base64,{logo_b64}" />
-        <h1 class="header-title">Logistics Support - Task Tracker</h1>
+        <h1 class="header-title">LS - Task Tracker</h1>
     </div>
     """,
     unsafe_allow_html=True,
@@ -478,11 +466,13 @@ live_activity_section()
 
 # Today's completed tasks section
 st.divider()
-title_col, toggle_col = st.columns([6, 2], vertical_alignment="center")
+title_col, text_col, toggle_col = st.columns([6, 5, 0.5], vertical_alignment="center")
 with title_col:
     st.subheader("Today's Activity", anchor=False)
+with text_col:
+    st.markdown("Show all users?", text_alignment="right")
 with toggle_col:
-    show_all_users = st.toggle("Show all users?", value=True, key="show_all_users")
+    show_all_users = st.toggle("Show all users?", value=True, key="show_all_users", label_visibility="collapsed")
 
 # Load and display today's completed tasks
 if show_all_users:
@@ -511,7 +501,7 @@ if not recent_df.empty:
         hide_index=True,
         width="stretch",
         column_config={
-            "Partially Completed?": st.column_config.CheckboxColumn("Partially Completed?", disabled=True, width=1),
+            "Partially Completed?": st.column_config.CheckboxColumn("Partially Completed?", disabled=True, width= 30),
             "Notes": st.column_config.TextColumn("Notes", width="large"),
             "Uploaded": st.column_config.TextColumn("Uploaded", width=1),
         },

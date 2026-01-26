@@ -193,6 +193,10 @@ def get_global_css() -> str:
     .block-container {
         padding-top: 1rem;
     }
+    /* Hide Deploy button (last header button in toolbar) */
+    [data-testid="stToolbar"] button[data-testid="stBaseButton-header"]:last-of-type {
+        display: none !important;
+    }
     /* Header styling */
     .header-row {
         display: flex;
@@ -316,6 +320,23 @@ def atomic_write_parquet(df: pd.DataFrame, path: Path, schema: pa.Schema = PARQU
     pq.write_table(table, tmp_path)
     tmp_path.replace(path)
 
+def build_out_dir(completed_dir: Path, user_key: str, ts: datetime) -> Path:
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+
+    ts_eastern = to_eastern(ts)
+
+    out_dir = (
+        completed_dir
+        / f"user={user_key}"
+        / f"year={ts_eastern.year}"
+        / f"month={ts_eastern.month:02d}"
+        / f"day={ts_eastern.day:02d}"
+    )
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    return out_dir
+
 def save_live_activity(
     live_activity_dir: Path,
     user_key: str,
@@ -410,18 +431,27 @@ def delete_live_activity(live_activity_dir: Path, user_key: str) -> None:
         pass
 
 @st.cache_data(ttl=15)
-def load_live_activities(live_activity_dir: Path, _exclude_user_key: str | None = None) -> pd.DataFrame:
-    """Load all active live activities, optionally excluding one user."""
+def load_live_activities(
+    live_activity_dir: Path,
+    _exclude_user_key: str | None = None,
+) -> pd.DataFrame:
     files = list(live_activity_dir.glob("user=*.parquet"))
     if not files:
         return pd.DataFrame()
     try:
-        needed_cols = ["FullName", "UserLogin", "TaskName", "StartTimestampUTC", "Notes"]
+        needed_cols = [
+            "UserKey",
+            "FullName",
+            "UserLogin",
+            "TaskName",
+            "StartTimestampUTC",
+            "Notes",
+        ]
         dataset = ds.dataset(files, format="parquet")
         table = dataset.to_table(columns=needed_cols)
         df = table.to_pandas()
         if _exclude_user_key:
-            df = df[df["UserLogin"] != _exclude_user_key]
+            df = df[df["UserKey"] != _exclude_user_key]
         return df
     except Exception as e:
         st.error(f"Failed to load live activities: {e}")
@@ -429,11 +459,13 @@ def load_live_activities(live_activity_dir: Path, _exclude_user_key: str | None 
 
 @st.cache_data(ttl=30)
 def load_recent_tasks(completed_dir: Path, user_key: str | None = None, limit: int = 50) -> pd.DataFrame:
-    """Load recent tasks completed today (for all users or a specific user)."""
     today_eastern = to_eastern(now_utc()).date()
     day_part = f"year={today_eastern.year}/month={today_eastern.month:02d}/day={today_eastern.day:02d}"
     if user_key:
-        files = list((completed_dir / f"user={user_key}" / day_part).glob("*.parquet"))
+        base = completed_dir / f"user={user_key}" / day_part
+        if not base.exists():
+            return pd.DataFrame()
+        files = list(base.glob("*.parquet"))
     else:
         files = list(completed_dir.glob(f"user=*/{day_part}/*.parquet"))
     if not files:
