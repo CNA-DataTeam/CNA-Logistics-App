@@ -28,23 +28,11 @@ st.set_page_config(
 st.markdown(utils.get_global_css(), unsafe_allow_html=True)
 
 # ============================================================
-# LOGO CACHING
-# ============================================================
-@st.cache_data
-def get_logo_base64(logo_path: str) -> str:
-    """Cache the base64 encoded logo to avoid re-reading on every rerun."""
-    try:
-        data = Path(logo_path).read_bytes()
-        return base64.b64encode(data).decode("utf-8")
-    except Exception:
-        return ""
-
-# ============================================================
 # HEADER
 # ============================================================
 
 LOGO_PATH           = config.LOGO_PATH
-logo_b64 = get_logo_base64(str(LOGO_PATH))
+logo_b64 = utils.get_logo_base64(str(LOGO_PATH))
 
 st.markdown(
     f"""
@@ -69,7 +57,6 @@ with col1:
     st.page_link(
         "pages/task-tracker.py",
         label="**Tracker**",
-        
         icon="🕒",
     )
 
@@ -88,6 +75,24 @@ with col2:
     st.caption(
         "Upcoming logistics and analytics tools designed to support reporting, "
         "automation, and operational visibility."
+    )
+
+st.divider()
+
+st.subheader("FedEx", anchor=False)
+
+spacer_l, col1, space_m, col2, spacer_r = st.columns([0.4, 2, 0.4, 2, 0.4])
+
+with col1:
+    st.page_link(
+        "pages/fedex-address-validator.py",
+        label="**Address Validator**",
+        icon="✅",
+    )
+
+    st.caption(
+        "Log daily operational tasks, track elapsed time, manage task cadence, "
+        "and view live activity from other Logistics Support team members in real time."
     )
 
 st.divider()

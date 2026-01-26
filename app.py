@@ -10,6 +10,9 @@ pages = {
         st.Page("pages/task-tracker.py", title="Tracker"),
         st.Page("pages/task-tracker-analytics.py", title="Analytics"),
     ],
+    "FedEx": [
+        st.Page("pages/fedex-address-validator.py", title="Address Validator")
+    ],
 }
 
 # Initialize and run the navigation
