@@ -341,7 +341,7 @@ if st.session_state.get("uploaded"):
     st.session_state.uploaded = False
 
 # Main layout columns
-spacer_l, left_col, _, mid_col, _, right_col, spacer_r = st.columns([0.4, 4.2, 0.2, 2.0, 0.2, 2.0, 0.4])
+spacer_l, left_col, _, mid_col, _, right_col, spacer_r = st.columns([0.4, 4, 0.2, 4, 0.2, 4, 0.4])
 with left_col:
     user_login = utils.get_os_user()
     full_name = utils.get_full_name_for_user(str(TASKS_XLSX_PATH), user_login)
