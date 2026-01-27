@@ -66,7 +66,7 @@ st.divider()
 # ============================================================
 # CONFIGURATION
 # ============================================================
-FEDEX_EMAIL_TO = "lbulfon@clarknationalaccounts.com"
+FEDEX_EMAIL_TO = ""  # quickresponse6@fedex.com
 EMAIL_SUBJECT = "Clark National Accounts - Residential Status Dispute"
 
 TABLE_KEY = "results_table"
@@ -216,7 +216,6 @@ with col3:
     # This will be populated after we know selected_rows
     email_button_placeholder = st.empty()
 
-
 # ============================================================
 # TABLE WITH CHECKBOX SELECTION
 # ============================================================
@@ -233,7 +232,8 @@ edited_df = st.data_editor(
     display_df,
     use_container_width=True,
     hide_index=True,
-    key="address_validation_editor",  # Unique key to maintain state
+    height=700,
+    key="address_validation_editor",
     column_config={
         "Select": st.column_config.CheckboxColumn(
             "Select",

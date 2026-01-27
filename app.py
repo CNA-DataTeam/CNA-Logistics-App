@@ -3,7 +3,7 @@ import config
 
 # Define pages and their grouping for navigation
 pages = {
-    "Home": [
+    "": [
         st.Page("pages/home.py", title="Home"),
     ],
     "Tasks": [
