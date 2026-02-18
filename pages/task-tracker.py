@@ -20,13 +20,10 @@ What it does:
 Key utils used (inputs -> outputs):
     - utils.get_global_css() -> str
     - utils.get_logo_base64(logo_path) -> str
-    - utils.find_task_tracker_root() -> Path
-        Input: config roots/libraries/relative path
-        Output: discovered local Task-Tracker root folder
     - utils.get_os_user() -> str
-    - utils.get_full_name_for_user(tasks_xlsx_path, user_login) -> str
-    - utils.load_all_user_full_names(tasks_xlsx_path) -> list[str]
-    - utils.load_tasks(tasks_xlsx_path) -> DataFrame (active tasks)
+    - utils.get_full_name_for_user(None, user_login) -> str
+    - utils.load_all_user_full_names() -> list[str]
+    - utils.load_tasks() -> DataFrame (active tasks)
     - utils.load_accounts(personnel_dir) -> list[str] (company groups)
     - utils.sanitize_key(value) -> str (safe user key)
     - utils.now_utc() -> datetime
@@ -48,8 +45,7 @@ Key utils used (inputs -> outputs):
 
 Primary inputs:
     - config.* directories (CompletedTasks, LiveActivity, Personnel, Logo)
-    - TasksAndTargets.xlsx (Tasks + Users sheets)
-    - cached parquet(s) under config.PERSONNEL_DIR
+    - startup output parquet(s) under config.PERSONNEL_DIR
 
 Primary outputs:
     - Completed task parquet files written under config.COMPLETED_TASKS_DIR
@@ -73,12 +69,6 @@ st.set_page_config(page_title="Task Tracker", layout="wide")
 st.markdown(utils.get_global_css(), unsafe_allow_html=True)
 
 # Resolve paths and constants
-try:
-    ROOT_DATA_DIR = utils.find_task_tracker_root()
-except Exception as e:
-    st.error(str(e))
-    st.stop()
-TASKS_XLSX_PATH = ROOT_DATA_DIR / config.TASKS_XLSX_NAME
 COMPLETED_TASKS_DIR = config.COMPLETED_TASKS_DIR
 LIVE_ACTIVITY_DIR = config.LIVE_ACTIVITY_DIR
 PERSONNEL_DIR = config.PERSONNEL_DIR
@@ -332,12 +322,12 @@ if st.session_state.get("uploaded"):
 spacer_l, left_col, _, mid_col, _, right_col, spacer_r = st.columns([0.4, 4, 0.2, 4, 0.2, 4, 0.4])
 with left_col:
     user_login = utils.get_os_user()
-    full_name = utils.get_full_name_for_user(str(TASKS_XLSX_PATH), user_login)
+    full_name = utils.get_full_name_for_user(None, user_login)
     user_key = utils.sanitize_key(user_login)
     st.session_state.current_user_key = user_key
     inputs_locked = st.session_state.state != "idle"
     st.text_input("User", value=full_name, disabled=True)
-    all_users = utils.load_all_user_full_names(str(TASKS_XLSX_PATH))
+    all_users = utils.load_all_user_full_names()
     # Exclude current user from covering list
     covering_options = [""] + [u for u in all_users if u != full_name]
     covering_key = f"covering_{st.session_state.reset_counter}"
@@ -359,7 +349,7 @@ with left_col:
     st.session_state.covering_for = covering_for
 
 with mid_col:
-    tasks_df = utils.load_tasks(str(TASKS_XLSX_PATH))
+    tasks_df = utils.load_tasks()
     task_options = [""] + sorted(tasks_df["TaskName"].unique()) if not tasks_df.empty else [""]
     task_key = f"task_{st.session_state.reset_counter}"
     if st.session_state.restored_task_name and task_key not in st.session_state:

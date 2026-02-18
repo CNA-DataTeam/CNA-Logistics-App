@@ -50,7 +50,12 @@ def get_os_user() -> str:
 
 def find_task_tracker_root() -> Path:
     """Find the Task-Tracker root folder from synced SharePoint locations."""
-    user = get_os_user()
+    # Preferred direct roots (new local sync structure)
+    for candidate in getattr(config, "TASK_TRACKER_ROOT_HINTS", []):
+        if candidate.exists():
+            return candidate
+
+    # Legacy SharePoint/OneDrive discovery fallback
     for root in config.POTENTIAL_ROOTS:
         for lib in config.DOCUMENT_LIBRARIES:
             candidate = root / lib / config.RELATIVE_APP_PATH

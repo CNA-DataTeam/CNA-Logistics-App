@@ -304,7 +304,12 @@ def get_logo_base64(logo_path: str) -> str:
 @lru_cache(maxsize=1)
 def find_task_tracker_root() -> Path:
     """Locate Task-Tracker folder from configured roots."""
-    user = get_os_user()
+    # Preferred direct roots (new local sync structure)
+    for candidate in getattr(config, "TASK_TRACKER_ROOT_HINTS", []):
+        if candidate.exists():
+            return candidate
+
+    # Legacy SharePoint/OneDrive discovery fallback
     for root in config.POTENTIAL_ROOTS:
         for lib in config.DOCUMENT_LIBRARIES:
             candidate = root / lib / config.RELATIVE_APP_PATH
@@ -499,17 +504,15 @@ def load_all_completed_tasks(base_dir: Path) -> pd.DataFrame:
         return pd.DataFrame()
 
 @st.cache_data(ttl=3600)
-def load_user_fullname_map(tasks_xlsx_path: str) -> dict[str, str]:
+def load_user_fullname_map(tasks_xlsx_path: str | None = None) -> dict[str, str]:
     """
-    Load mapping from user login to full name using the Users sheet.
-    If a cached users parquet exists, use it; otherwise read from Excel.
+    Load mapping from user login to full name from startup output users.parquet.
     """
     users_parquet = Path(config.PERSONNEL_DIR) / "users.parquet"
     try:
-        if users_parquet.exists():
-            df = pd.read_parquet(users_parquet)
-        else:
-            df = pd.read_excel(tasks_xlsx_path, sheet_name="Users")
+        if not users_parquet.exists():
+            return {}
+        df = pd.read_parquet(users_parquet)
     except Exception:
         return {}
     if df.empty:
@@ -528,20 +531,19 @@ def load_user_fullname_map(tasks_xlsx_path: str) -> dict[str, str]:
             mapping[u] = str(fn).strip()
     return mapping
 
-def get_full_name_for_user(tasks_xlsx_path: str, user_login: str) -> str:
+def get_full_name_for_user(tasks_xlsx_path: str | None, user_login: str) -> str:
     """Get the full name for a given user login. If not found, return the login."""
     mapping = load_user_fullname_map(tasks_xlsx_path)
     return mapping.get(str(user_login).strip().lower(), user_login)
 
 @st.cache_data(ttl=3600)
-def load_all_user_full_names(tasks_xlsx_path: str) -> list[str]:
-    """Load all full names from the Users sheet (sorted)."""
+def load_all_user_full_names(tasks_xlsx_path: str | None = None) -> list[str]:
+    """Load all full names from startup output users.parquet (sorted)."""
     try:
         users_parquet = Path(config.PERSONNEL_DIR) / "users.parquet"
-        if users_parquet.exists():
-            df = pd.read_parquet(users_parquet)
-        else:
-            df = pd.read_excel(tasks_xlsx_path, sheet_name="Users")
+        if not users_parquet.exists():
+            return []
+        df = pd.read_parquet(users_parquet)
     except Exception:
         return []
     if df.empty:
@@ -557,20 +559,20 @@ def load_all_user_full_names(tasks_xlsx_path: str) -> list[str]:
     return sorted(n for n in names.unique() if n)
 
 @st.cache_data(ttl=3600)
-def load_tasks(tasks_xlsx_path: str) -> pd.DataFrame:
-    """Load active tasks from the Tasks sheet of the Excel (or use cached parquet)."""
+def load_tasks(tasks_xlsx_path: str | None = None) -> pd.DataFrame:
+    """Load active tasks from startup output tasks.parquet."""
     try:
         tasks_parquet = Path(config.PERSONNEL_DIR) / "tasks.parquet"
-        if tasks_parquet.exists():
-            df = pd.read_parquet(tasks_parquet)
-        else:
-            df = pd.read_excel(tasks_xlsx_path, sheet_name="Tasks")
+        if not tasks_parquet.exists():
+            st.error("tasks.parquet not found in Personnel directory. Run startup.py first.")
+            return pd.DataFrame()
+        df = pd.read_parquet(tasks_parquet)
     except Exception as e:
-        st.error(f"Failed to read Tasks sheet: {e}")
+        st.error(f"Failed to read tasks.parquet: {e}")
         return pd.DataFrame()
     if df.empty:
         return pd.DataFrame()
-    # If data came from Excel, filter and clean it
+    # Keep startup output clean/consistent
     if "IsActive" in df.columns:
         df = df[df["IsActive"].astype(int) == 1].copy()
     if "TaskName" in df.columns:
@@ -594,9 +596,7 @@ class UserContext:
     def __init__(self):
         self.user_login: str = get_os_user()
         try:
-            task_tracker_root = find_task_tracker_root()
-            tasks_path = task_tracker_root / config.TASKS_XLSX_NAME
-            self.full_name: str = get_full_name_for_user(str(tasks_path), self.user_login)
+            self.full_name: str = get_full_name_for_user(None, self.user_login)
         except Exception:
             self.full_name: str = self.user_login
         if config.ALLOWED_ANALYTICS_USERS and len(config.ALLOWED_ANALYTICS_USERS) > 0:
