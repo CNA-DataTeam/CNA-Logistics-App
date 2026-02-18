@@ -28,9 +28,11 @@ from io import BytesIO
 from urllib.parse import quote
 import webbrowser
 from decimal import Decimal, InvalidOperation
+import base64
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 from openpyxl import load_workbook
 
 import config
@@ -195,7 +197,7 @@ def build_attachment_df(rows: pd.DataFrame) -> pd.DataFrame:
                 axis=1,
             ),
             "Amount Billed": pd.to_numeric(rows.get("Net Charge Amount"), errors="coerce"),
-            "Credit Requested (2.38)": 2.38,
+            "Credit Requested": 2.38,
             "Reason": dispute_reason,
         }
     )
@@ -224,6 +226,21 @@ def create_excel_download(rows: pd.DataFrame) -> Tuple[str, bytes]:
     formatted_buffer.seek(0)
 
     return file_name, formatted_buffer.getvalue()
+
+def trigger_file_download(file_name: str, file_bytes: bytes) -> None:
+    """Trigger a browser download in the same click cycle."""
+    safe_name = file_name.replace('"', "_")
+    file_b64 = base64.b64encode(file_bytes).decode("ascii")
+    components.html(
+        f"""
+        <a id="dl" href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{file_b64}" download="{safe_name}"></a>
+        <script>
+            const a = document.getElementById("dl");
+            if (a) a.click();
+        </script>
+        """,
+        height=0,
+    )
 
 
 # ============================================================
@@ -496,44 +513,49 @@ if st.session_state.select_all and edited_df["Select"].sum() != len(edited_df):
 # ============================================================
 # SELECTION EXTRACTION
 # ============================================================
-selected_rows = edited_df[edited_df["Select"]].drop(columns=["Select"])
-selected_rows_for_email = df.loc[selected_rows.index]
+selected_mask = edited_df["Select"]
+selected_indices = edited_df.index[selected_mask]
+has_selection = len(selected_indices) > 0
+selected_rows_for_email = df.loc[selected_indices]
 # ============================================================
 # ACTION BUTTONS (in right columns)
 # ============================================================
 with generate_button_placeholder:
-    if selected_rows.empty:
-        st.download_button(
-            label="Generate Dispute File",
-            data=b"",
-            file_name="fedex_residential_dispute.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            disabled=True,
-            key="generate_dispute",
-        )
-    else:
-        file_name, file_bytes = create_excel_download(selected_rows_for_email)
-        st.download_button(
-            label="Generate Dispute File",
-            data=file_bytes,
-            file_name=file_name,
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key="generate_dispute",
-        )
+    generate_dispute_clicked = st.button(
+        "Generate Dispute File",
+        disabled=not has_selection,
+        key="generate_dispute",
+    )
 
 with email_button_placeholder:
     send_email_clicked = st.button(
         "Send Email to FedEx 📨",
-        disabled=selected_rows.empty,
+        disabled=not has_selection,
         key="send_email",
     )
 
 with disputed_button_placeholder:
     mark_disputed_clicked = st.button(
         "Mark as Disputed",
-        disabled=selected_rows.empty,
+        disabled=not has_selection,
         key="mark_disputed",
     )
+
+if generate_dispute_clicked:
+    try:
+        with st.spinner("Creating dispute Excel file..."):
+            file_name, file_bytes = create_excel_download(selected_rows_for_email)
+        trigger_file_download(file_name, file_bytes)
+        st.success("Dispute file generated and download started.")
+        st.download_button(
+            "If download did not start, click to download",
+            data=file_bytes,
+            file_name=file_name,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key=f"fallback_download_{file_name}",
+        )
+    except Exception as exc:
+        st.error(f"Generate dispute file failed: {type(exc).__name__}: {exc}")
 
 if send_email_clicked:
     try:
@@ -556,7 +578,7 @@ if send_email_clicked:
 
 if mark_disputed_clicked:
     try:
-        mark_rows_as_disputed(RESULTS_CSV_FILE, selected_rows.index.tolist())
+        mark_rows_as_disputed(RESULTS_CSV_FILE, selected_indices.tolist())
         load_results.clear()
         st.success("Selected rows marked as disputed.")
         st.rerun()
