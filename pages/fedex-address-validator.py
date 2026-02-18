@@ -435,7 +435,7 @@ if "apply_select_all" not in st.session_state:
 # ============================================================
 # TOGGLE SELECT / SEND EMAIL BUTTONS
 # ============================================================
-col1, col2, col3, col4, col5 = st.columns([1.5, 6.7, 1.8, 1.8, 1.8], width="stretch")
+col1, col2, col3, col4, col5 = st.columns([1.5, 5.1, 2.4, 2.6, 2.4], width="stretch")
 
 with col1:
     # Determine button label based on current state
