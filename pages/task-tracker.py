@@ -135,9 +135,11 @@ def compute_elapsed_seconds() -> int:
         return 0
     now = st.session_state.end_utc if st.session_state.state == "ended" else utils.now_utc()
     base = int((now - st.session_state.start_utc).total_seconds())
-    paused = int(st.session_state.paused_seconds)
-    if st.session_state.state == "paused" and st.session_state.pause_start_utc:
-        paused += int((utils.now_utc() - st.session_state.pause_start_utc).total_seconds())
+    paused = int(st.session_state.paused_seconds or 0)
+    if st.session_state.pause_start_utc:
+        pause_delta = int((now - st.session_state.pause_start_utc).total_seconds())
+        if pause_delta > 0:
+            paused += pause_delta
     return max(0, base - paused)
 
 def reset_all():
@@ -158,13 +160,20 @@ def start_task():
     """Start a new task timing."""
     st.session_state.state = "running"
     st.session_state.start_utc = utils.now_utc()
+    st.session_state.end_utc = None
+    st.session_state.paused_seconds = 0
+    st.session_state.pause_start_utc = None
+    st.session_state.elapsed_seconds = 0
     st.session_state.ended_from_paused = False
     st.session_state.live_activity_saved = False
 
 def pause_task():
     """Pause the current task."""
+    if st.session_state.state != "running":
+        return
     st.session_state.state = "paused"
-    st.session_state.pause_start_utc = utils.now_utc()
+    if not st.session_state.pause_start_utc:
+        st.session_state.pause_start_utc = utils.now_utc()
     if "current_user_key" in st.session_state:
         utils.update_live_activity_state(
             LIVE_ACTIVITY_DIR,
@@ -176,7 +185,12 @@ def pause_task():
 
 def resume_task():
     """Resume a paused task."""
-    st.session_state.paused_seconds += int((utils.now_utc() - st.session_state.pause_start_utc).total_seconds())
+    if st.session_state.state != "paused":
+        return
+    if st.session_state.pause_start_utc:
+        pause_delta = int((utils.now_utc() - st.session_state.pause_start_utc).total_seconds())
+        if pause_delta > 0:
+            st.session_state.paused_seconds += pause_delta
     st.session_state.pause_start_utc = None
     st.session_state.state = "running"
     if "current_user_key" in st.session_state:
