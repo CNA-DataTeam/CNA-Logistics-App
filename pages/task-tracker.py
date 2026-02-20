@@ -58,6 +58,7 @@ Primary outputs:
 import streamlit as st
 import pandas as pd
 import uuid
+from pathlib import Path
 import config
 import utils
 from streamlit_autorefresh import st_autorefresh
@@ -71,6 +72,7 @@ st.markdown(utils.get_global_css(), unsafe_allow_html=True)
 # Resolve paths and constants
 COMPLETED_TASKS_DIR = config.COMPLETED_TASKS_DIR
 LIVE_ACTIVITY_DIR = config.LIVE_ACTIVITY_DIR
+ARCHIVED_TASKS_DIR = config.ARCHIVED_TASKS_DIR
 PERSONNEL_DIR = config.PERSONNEL_DIR
 LOGO_PATH = config.LOGO_PATH
 
@@ -98,6 +100,9 @@ DEFAULT_STATE = {
     "restored_task_name": None,
     "restored_account": None,
     "restored_covering_for": None,
+    "review_archive_open": False,
+    "review_archive_rendered": False,
+    "ended_from_paused": False,
 }
 # Ensure all default keys are set
 for k, v in DEFAULT_STATE.items():
@@ -153,6 +158,7 @@ def start_task():
     """Start a new task timing."""
     st.session_state.state = "running"
     st.session_state.start_utc = utils.now_utc()
+    st.session_state.ended_from_paused = False
     st.session_state.live_activity_saved = False
 
 def pause_task():
@@ -184,10 +190,51 @@ def resume_task():
 
 def end_task():
     """End the current task."""
+    st.session_state.ended_from_paused = st.session_state.state == "paused"
     st.session_state.state = "ended"
     st.session_state.end_utc = utils.now_utc()
     if "current_user_key" in st.session_state:
         utils.delete_live_activity(LIVE_ACTIVITY_DIR, st.session_state.current_user_key)
+
+def format_start_datetime(dt_utc):
+    """Format UTC datetime for human-readable Eastern display."""
+    if not dt_utc:
+        return "None"
+    dt_et = utils.to_eastern(dt_utc)
+    return dt_et.strftime("%m/%d/%Y %I:%M:%S %p").lower()
+
+def get_submit_duration_seconds(default_seconds: int) -> int:
+    """Duration rule: if ended while paused, count from start to submission time."""
+    if st.session_state.get("ended_from_paused") and st.session_state.start_utc:
+        return max(0, int((utils.now_utc() - st.session_state.start_utc).total_seconds()))
+    return max(0, int(default_seconds))
+
+def archive_task(user_login: str, full_name: str, user_key: str, task_name: str, selected_account: str) -> None:
+    """Archive the currently paused task and reset the page state."""
+    if st.session_state.state != "paused" or not st.session_state.start_utc:
+        return
+    paused_seconds = int(st.session_state.paused_seconds)
+    if st.session_state.pause_start_utc:
+        paused_seconds += int((utils.now_utc() - st.session_state.pause_start_utc).total_seconds())
+    utils.save_archived_task(
+        ARCHIVED_TASKS_DIR,
+        user_key,
+        user_login,
+        full_name,
+        task_name,
+        st.session_state.selected_cadence,
+        selected_account,
+        st.session_state.covering_for,
+        st.session_state.notes,
+        st.session_state.start_utc,
+        paused_seconds=paused_seconds,
+        pause_start_utc=None,
+    )
+    utils.load_archived_tasks.clear()
+    if "current_user_key" in st.session_state:
+        utils.delete_live_activity(LIVE_ACTIVITY_DIR, st.session_state.current_user_key)
+    reset_all()
+    st.session_state.archived = True
 
 def select_cadence(cadence: str):
     """Button callback to select a task cadence."""
@@ -223,22 +270,26 @@ def confirm_submit(user_login, full_name, user_key, task_name, selected_account)
     st.caption(f"**User:** {full_name}")
     st.caption(f"**Task:** {task_name}")
     st.caption(f"**Cadence:** {st.session_state.selected_cadence}")
+    st.caption(f"**Started On:** {format_start_datetime(st.session_state.start_utc)}")
     is_covering = bool(st.session_state.covering_for and st.session_state.covering_for.strip())
     st.caption(f"**Covering For:** {'Yes - ' + st.session_state.covering_for if is_covering else 'No'}")
     st.caption(f"**Account:** {selected_account if selected_account else 'None'}")
     st.caption(f"**Notes:** {st.session_state.notes if st.session_state.notes else 'None'}")
     st.caption(f"**Partially Complete:** {'Yes' if st.session_state.get('submit_partially_complete', False) else 'No'}")
     st.divider()
-    current_duration = utils.format_hhmmss(st.session_state.elapsed_seconds)
+    effective_duration_seconds = get_submit_duration_seconds(st.session_state.elapsed_seconds)
+    current_duration = utils.format_hhmmss(effective_duration_seconds)
     edited_duration = st.text_input("Duration", value=current_duration, key="edit_duration", max_chars=8)
     parsed_duration = utils.parse_hhmmss(edited_duration)
     if parsed_duration < 0:
-        parsed_duration = st.session_state.elapsed_seconds
+        parsed_duration = effective_duration_seconds
         st.warning("Invalid format - using original duration")
     st.divider()
     left, right = st.columns(2)
     with left:
         if st.button("Submit", type="primary", width="stretch"):
+            if edited_duration.strip() == current_duration:
+                parsed_duration = get_submit_duration_seconds(effective_duration_seconds)
             record = build_task_record(
                 user_login,
                 full_name,
@@ -265,6 +316,60 @@ def confirm_submit(user_login, full_name, user_key, task_name, selected_account)
             st.session_state.confirm_open = False
             st.session_state.confirm_rendered = False
             st.rerun()
+
+@st.dialog("Archived Tasks")
+def review_archived_tasks_dialog(user_login, full_name, user_key):
+    """Review archived tasks with options to resume or delete."""
+    archived_df = utils.load_archived_tasks(ARCHIVED_TASKS_DIR, user_key)
+    if archived_df.empty:
+        st.info("No archived tasks found.")
+        return
+
+    st.caption("Resume or delete paused tasks saved in archive.")
+    for idx, row in archived_df.iterrows():
+        task_name = str(row.get("TaskName") or "")
+        start_utc = pd.to_datetime(row.get("StartTimestampUTC"), utc=True).to_pydatetime()
+        start_text = format_start_datetime(start_utc)
+        st.markdown(f"**{task_name}**")
+        st.caption(f"Start: {start_text}")
+        resume_col, delete_col = st.columns(2)
+        with resume_col:
+            if st.button("Resume", key=f"resume_archive_{idx}", width="stretch"):
+                archive_path_raw = str(row.get("ArchiveFilePath") or "").strip()
+                if archive_path_raw:
+                    archive_path = Path(archive_path_raw)
+                    utils.delete_archived_task_file(archive_path)
+
+                st.session_state.state = "paused"
+                st.session_state.start_utc = start_utc
+                st.session_state.end_utc = None
+                st.session_state.paused_seconds = int(row.get("PausedSeconds", 0) or 0)
+                st.session_state.pause_start_utc = utils.now_utc()
+                st.session_state.ended_from_paused = False
+                st.session_state.notes = str(row.get("Notes") or "")
+                st.session_state.selected_cadence = str(row.get("TaskCadence") or "")
+                st.session_state.covering_for = str(row.get("CoveringFor") or "")
+                st.session_state.covering_toggle = bool(st.session_state.covering_for)
+                st.session_state.restored_task_name = task_name
+                st.session_state.restored_account = str(row.get("CompanyGroup") or "")
+                st.session_state.restored_covering_for = st.session_state.covering_for
+                st.session_state.live_activity_saved = False
+                st.session_state.last_task_name = task_name
+                st.session_state.review_archive_open = False
+                st.session_state.review_archive_rendered = False
+                utils.load_archived_tasks.clear()
+                st.rerun()
+        with delete_col:
+            if st.button("Delete", key=f"delete_archive_{idx}", width="stretch"):
+                archive_path_raw = str(row.get("ArchiveFilePath") or "").strip()
+                if archive_path_raw:
+                    archive_path = Path(archive_path_raw)
+                    utils.delete_archived_task_file(archive_path)
+                utils.load_archived_tasks.clear()
+                st.session_state.review_archive_open = True
+                st.session_state.review_archive_rendered = False
+                st.rerun()
+        st.divider()
 
 # Live activity section (refreshes periodically to show team activity)
 @st.fragment(run_every=30)
@@ -317,6 +422,9 @@ st.divider()
 if st.session_state.get("uploaded"):
     st.toast("Upload Successful", icon="✅")
     st.session_state.uploaded = False
+if st.session_state.get("archived"):
+    st.toast("Task archived")
+    st.session_state.archived = False
 
 # Main layout columns
 spacer_l, left_col, _, mid_col, _, right_col, spacer_r = st.columns([0.4, 4, 0.2, 4, 0.2, 4, 0.4])
@@ -335,18 +443,20 @@ with left_col:
     if st.session_state.restored_covering_for and covering_key not in st.session_state:
         if st.session_state.restored_covering_for in covering_options:
             st.session_state[covering_key] = st.session_state.restored_covering_for
+    covering_for = st.selectbox(
+        "Covering For (optional)",
+        covering_options,
+        disabled=inputs_locked,
+        key=covering_key,
+    )
     account_options = [""] + utils.load_accounts(str(PERSONNEL_DIR))
     acct_key = f"acct_{st.session_state.reset_counter}"
     if st.session_state.restored_account and acct_key not in st.session_state:
         if st.session_state.restored_account in account_options:
             st.session_state[acct_key] = st.session_state.restored_account
     selected_account = st.selectbox("Account (optional)", account_options, key=acct_key)
-    covering_toggle = st.toggle("Covering For Someone?", value=False, key="covering_toggle")
-    if covering_toggle:
-        covering_for = st.selectbox("", covering_options, disabled=inputs_locked, key=covering_key, label_visibility="collapsed")
-    else:
-        covering_for = ""
     st.session_state.covering_for = covering_for
+    archived_count = len(utils.load_archived_tasks(ARCHIVED_TASKS_DIR, user_key))
 
 with mid_col:
     tasks_df = utils.load_tasks()
@@ -413,6 +523,22 @@ with right_col:
             st.button("Resume", width="stretch", on_click=resume_task)
         with c2:
             st.button("End", width="stretch", on_click=end_task)
+    if st.session_state.state == "paused":
+        st.button(
+            "Archive",
+            width="stretch",
+            on_click=archive_task,
+            args=(user_login, full_name, user_key, task_name, selected_account),
+        )
+    if archived_count > 0:
+        if st.button(
+            f"You have {archived_count} archived tasks, click here to review",
+            key="review_archived_link",
+            type="tertiary",
+        ):
+            st.session_state.review_archive_open = True
+            st.session_state.review_archive_rendered = False
+            st.rerun()
     if st.session_state.state == "ended":
         c1, c2 = st.columns(2)
         with c1:
@@ -450,6 +576,9 @@ if st.session_state.state in ("running", "paused") and not st.session_state.live
 if st.session_state.confirm_open and not st.session_state.get("confirm_rendered"):
     st.session_state.confirm_rendered = True
     confirm_submit(user_login, full_name, user_key, task_name, selected_account)
+if st.session_state.review_archive_open and not st.session_state.get("review_archive_rendered"):
+    st.session_state.review_archive_rendered = True
+    review_archived_tasks_dialog(user_login, full_name, user_key)
 
 # Render live activity section (ongoing tasks of other users)
 live_activity_section()

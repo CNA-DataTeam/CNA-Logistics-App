@@ -49,6 +49,7 @@ from __future__ import annotations
 import base64
 import getpass
 import re
+import uuid
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -96,6 +97,23 @@ LIVE_ACTIVITY_SCHEMA = pa.schema([
     ("State", pa.string()),
     ("PausedSeconds", pa.int64()),
     ("PauseStartTimestampUTC", pa.timestamp("us", tz="UTC")),
+])
+ARCHIVED_TASK_SCHEMA = pa.schema([
+    ("ArchiveID", pa.string()),
+    ("UserKey", pa.string()),
+    ("UserLogin", pa.string()),
+    ("FullName", pa.string()),
+    ("TaskName", pa.string()),
+    ("TaskCadence", pa.string()),
+    ("CompanyGroup", pa.string()),
+    ("IsCoveringFor", pa.bool_()),
+    ("CoveringFor", pa.string()),
+    ("Notes", pa.string()),
+    ("StartTimestampUTC", pa.timestamp("us", tz="UTC")),
+    ("PausedSeconds", pa.int64()),
+    ("PauseStartTimestampUTC", pa.timestamp("us", tz="UTC")),
+    ("ArchivedTimestampUTC", pa.timestamp("us", tz="UTC")),
+    ("AppVersion", pa.string()),
 ])
 
 @lru_cache(maxsize=1)
@@ -434,6 +452,88 @@ def delete_live_activity(live_activity_dir: Path, user_key: str) -> None:
             path.unlink()
     except Exception:
         pass
+
+def save_archived_task(
+    archived_tasks_dir: Path,
+    user_key: str,
+    user_login: str,
+    full_name: str,
+    task_name: str,
+    cadence: str,
+    account: str,
+    covering_for: str,
+    notes: str,
+    start_utc: datetime,
+    paused_seconds: int,
+    pause_start_utc: datetime | None = None,
+) -> Path:
+    """Save a paused task to archive and return the file path."""
+    archived_tasks_dir.mkdir(parents=True, exist_ok=True)
+    archive_id = str(uuid.uuid4())
+    is_covering_for = bool(covering_for and covering_for.strip())
+    record = {
+        "ArchiveID": archive_id,
+        "UserKey": user_key,
+        "UserLogin": user_login,
+        "FullName": full_name or None,
+        "TaskName": task_name,
+        "TaskCadence": cadence,
+        "CompanyGroup": account or None,
+        "IsCoveringFor": is_covering_for,
+        "CoveringFor": covering_for or None,
+        "Notes": notes.strip() if notes and notes.strip() else None,
+        "StartTimestampUTC": start_utc,
+        "PausedSeconds": int(paused_seconds),
+        "PauseStartTimestampUTC": pause_start_utc,
+        "ArchivedTimestampUTC": now_utc(),
+        "AppVersion": config.APP_VERSION,
+    }
+    df = pd.DataFrame([record])
+    start_eastern = to_eastern(start_utc)
+    path = (
+        archived_tasks_dir
+        / f"user={user_key}"
+        / f"archive_{start_eastern:%Y%m%d_%H%M%S}_{archive_id[:8]}.parquet"
+    )
+    atomic_write_parquet(df, path, schema=ARCHIVED_TASK_SCHEMA)
+    return path
+
+@st.cache_data(ttl=15)
+def load_archived_tasks(archived_tasks_dir: Path, user_key: str) -> pd.DataFrame:
+    """Load archived tasks for one user, newest first."""
+    base = archived_tasks_dir / f"user={user_key}"
+    files = list(base.glob("*.parquet"))
+    if not files:
+        return pd.DataFrame()
+    try:
+        frames = []
+        for file_path in files:
+            df_one = pd.read_parquet(file_path)
+            if df_one.empty:
+                continue
+            df_one["ArchiveFilePath"] = str(file_path)
+            frames.append(df_one)
+        if not frames:
+            return pd.DataFrame()
+        df = pd.concat(frames, ignore_index=True)
+        if df.empty:
+            return pd.DataFrame()
+        if "ArchivedTimestampUTC" in df.columns:
+            df["ArchivedTimestampUTC"] = pd.to_datetime(df["ArchivedTimestampUTC"], utc=True)
+            df = df.sort_values("ArchivedTimestampUTC", ascending=False)
+        return df.reset_index(drop=True)
+    except Exception:
+        return pd.DataFrame()
+
+def delete_archived_task_file(path: Path) -> bool:
+    """Delete one archived task file if it exists. Returns True if removed."""
+    try:
+        if path.exists():
+            path.unlink()
+            return True
+        return False
+    except Exception:
+        return False
 
 @st.cache_data(ttl=15)
 def load_live_activities(
