@@ -29,9 +29,13 @@ Outputs:
 
 import logging
 import pandas as pd
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 import getpass
+import os
+import platform
+import subprocess
+import sys
 import config
 
 def setup_logging() -> None:
@@ -47,6 +51,46 @@ def setup_logging() -> None:
 def get_os_user() -> str:
     """Get current OS username."""
     return getpass.getuser()
+
+def get_parent_command(parent_pid: int) -> str:
+    """Best-effort lookup of the parent process command line."""
+    if parent_pid <= 0:
+        return ""
+    try:
+        if os.name == "nt":
+            cmd = [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                (
+                    f'$p = Get-CimInstance Win32_Process -Filter "ProcessId={parent_pid}"; '
+                    'if ($p) { $p.CommandLine }'
+                ),
+            ]
+        else:
+            cmd = ["ps", "-o", "command=", "-p", str(parent_pid)]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=5, check=False)
+        return result.stdout.strip()
+    except Exception:
+        return ""
+
+def log_run_context() -> None:
+    """Log who ran startup and what launched it."""
+    parent_pid = os.getppid()
+    parent_cmd = get_parent_command(parent_pid)
+    caller_hint = os.environ.get("STARTUP_CALLER", "")
+    logging.info(
+        "Run context | started=%s | user=%s | host=%s | script=%s | cwd=%s | argv=%s | parent_pid=%s | parent_cmd=%s | startup_caller=%s",
+        datetime.now().astimezone().isoformat(),
+        get_os_user(),
+        platform.node(),
+        str(Path(__file__).resolve()),
+        str(Path.cwd()),
+        " ".join(sys.argv),
+        parent_pid,
+        parent_cmd,
+        caller_hint,
+    )
 
 def find_task_tracker_root() -> Path:
     """Find the Task-Tracker root folder from synced SharePoint locations."""
@@ -143,6 +187,7 @@ def save_parquet(df: pd.DataFrame, output_dir: Path, filename: str) -> Path:
 def main() -> None:
     """Main startup routine."""
     setup_logging()
+    log_run_context()
     logging.info(f"Running startup check: {date.today().isoformat()}")
     try:
         output_dir, tasks_xlsx, accounts_xlsx = get_paths()

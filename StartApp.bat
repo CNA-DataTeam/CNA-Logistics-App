@@ -114,6 +114,24 @@ if errorlevel 1 (
   exit /b 1
 )
 
+if not exist "%ROOT_DIR%\startup.py" (
+  call :LOG "ERROR: startup.py not found."
+  echo ERROR: startup.py not found in root directory.
+  pause
+  exit /b 1
+)
+
+call :LOG "Running startup.py..."
+set "STARTUP_CALLER=StartApp.bat"
+"%VENV_DIR%\Scripts\python.exe" "%ROOT_DIR%\startup.py" >> "%LOG_FILE%" 2>&1
+if errorlevel 1 (
+  call :LOG "ERROR: startup.py failed."
+  echo ERROR: startup.py failed. Check logs for details.
+  pause
+  exit /b 1
+)
+call :LOG "startup.py completed."
+
 call :LOG "Starting server..."
 start "" /B "%VENV_DIR%\Scripts\pythonw.exe" -m streamlit run "app.py" ^
   --server.port=%STREAMLIT_PORT% ^
