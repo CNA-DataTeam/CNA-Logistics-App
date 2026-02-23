@@ -97,6 +97,24 @@ with col1:
 
 st.divider()
 
+st.subheader("Packaging", anchor=False)
+
+spacer_l, col1, space_m, col2, spacer_r = st.columns([0.4, 2, 0.4, 2, 0.4])
+
+with col1:
+    st.page_link(
+        "pages/packaging-estimator.py",
+        label="**Packaging Estimator**",
+        icon="📦",
+    )
+
+    st.caption(
+        "Estimate package counts and grouped dimensions from uploaded or pasted item lists "
+        "using SSAS verification, API packaging, and rule-based fallback logic."
+    )
+
+st.divider()
+
 st.caption(
     "Use the sidebar to switch between applications at any time.",
     text_alignment="center",

@@ -13,6 +13,9 @@ pages = {
     "FedEx": [
         st.Page("pages/fedex-address-validator.py", title="Address Validator")
     ],
+    "Packaging": [
+        st.Page("pages/packaging-estimator.py", title="Estimator"),
+    ],
 }
 
 # Initialize and run the navigation

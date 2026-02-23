@@ -7,6 +7,7 @@ The **Logistics Support Task Tracker** is a local Streamlit application used to 
 - Track elapsed time (start / pause / resume / end).
 - Add notes.
 - Upload task records to a shared data location.
+- Run packaging estimates from item/quantity lists with SSAS + API + rule-based fallback logic.
 
 ## Documentation
 Use the documentation in `docs/` for setup, troubleshooting, and the proposed document structure:
