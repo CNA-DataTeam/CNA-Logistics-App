@@ -1,5 +1,9 @@
 import streamlit as st
 import config
+import utils
+
+LOGGER = utils.get_program_logger("app", config.LOG_FILES["app"])
+LOGGER.info("App bootstrap started.")
 
 # Define pages and their grouping for navigation
 pages = {
@@ -20,4 +24,5 @@ pages = {
 
 # Initialize and run the navigation
 navigation = st.navigation(pages)
+LOGGER.info("Navigation initialized.")
 navigation.run()

@@ -16,7 +16,6 @@ from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
-from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import hashlib
 import json
@@ -132,30 +131,17 @@ def get_page_logger() -> logging.Logger:
     """Create a page logger using config.json logging settings."""
     page_config = load_packaging_config()
     logging_cfg = page_config.get("logging", {})
-    log_dir = Path(str(logging_cfg.get("directory", "logs")))
-    if not log_dir.is_absolute():
-        log_dir = Path.cwd() / log_dir
-    log_dir.mkdir(parents=True, exist_ok=True)
-
-    logger = logging.getLogger("packaging_estimator_page")
-    logger.setLevel(logging.INFO)
-    if not logger.handlers:
-        handler = RotatingFileHandler(
-            filename=log_dir / "packaging_estimator.log",
-            maxBytes=int(logging_cfg.get("max_bytes", 1_048_576)),
-            backupCount=int(logging_cfg.get("backup_count", 5)),
-            encoding="utf-8",
-        )
-        handler.setFormatter(
-            logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s")
-        )
-        logger.addHandler(handler)
-        logger.propagate = False
-    return logger
+    return utils.get_program_logger(
+        "packaging_estimator_page",
+        config.LOG_FILES["packaging_estimator"],
+        max_bytes=int(logging_cfg.get("max_bytes", 1_048_576)),
+        backup_count=int(logging_cfg.get("backup_count", 5)),
+    )
 
 
 LOGGER = get_page_logger()
 PAGE_CONFIG = load_packaging_config()
+LOGGER.info("Packaging Estimator page rendered.")
 
 
 # ============================================================
@@ -361,6 +347,51 @@ def _resolve_ssas_field_ordinals(description: Any) -> tuple[int, int]:
     return item_ordinal, verified_ordinal
 
 
+def _dax_escape_string(value: str) -> str:
+    return value.replace('"', '""')
+
+
+def _build_verification_query(item_numbers: list[str]) -> str:
+    values = ",\n            ".join(f'"{_dax_escape_string(item)}"' for item in item_numbers)
+    return f"""
+DEFINE
+    VAR __ItemFilterValues =
+        {{
+            {values}
+        }}
+    VAR __DS0Filtered =
+        FILTER(
+            'Item Info',
+            'Item Info'[ItemNumber] IN __ItemFilterValues
+        )
+EVALUATE
+    SUMMARIZE(
+        __DS0Filtered,
+        'Item Info'[ItemNumber],
+        'Item Info'[HeightInInches],
+        'Item Info'[LengthInInches],
+        'Item Info'[WidthInInches],
+        'Item Info'[WeightInPounds],
+        'Item Info'[IsRepackRequired],
+        'Item Info'[IsRepositionable],
+        'Item Info'[IsVerified],
+        'Item Info'[Can Nest?],
+        'Item Info'[AverageVolume],
+        'Item Info'[BreakQuantity]
+    )
+""".strip()
+
+
+def _is_adomd_unknown_response(exc: Exception) -> bool:
+    name = exc.__class__.__name__.lower()
+    text = str(exc).lower()
+    return (
+        "adomdunknownresponseexception" in name
+        or "adomdunknownresponseexception" in text
+        or "unrecognizable response" in text
+    )
+
+
 def _acquire_service_principal_token(
     tenant_id: str,
     client_id: str,
@@ -442,11 +473,17 @@ def _resolve_ssas_access_token(ssas_cfg: dict[str, Any]) -> tuple[str, str]:
 def _iter_pyadomd_rows(cursor: Any) -> Any:
     fetchone = getattr(cursor, "fetchone", None)
     if callable(fetchone):
-        while True:
-            row = fetchone()
-            if row is None:
-                break
+        first = fetchone()
+        if first is None:
+            return
+        if hasattr(first, "__iter__") and not isinstance(first, (tuple, list, dict, str, bytes)):
+            for row in first:
+                yield row
+            return
+        row = first
+        while row is not None:
             yield row
+            row = fetchone()
         return
 
     fetchall = getattr(cursor, "fetchall", None)
@@ -466,11 +503,14 @@ def fetch_verification_flags(items: list[str]) -> dict[str, bool]:
         return {}
 
     ssas_cfg = PAGE_CONFIG.get("ssas", {}) if isinstance(PAGE_CONFIG.get("ssas"), dict) else {}
+    item_filter_chunk_size = int(ssas_cfg.get("item_filter_chunk_size", 1000) or 1000)
+    if item_filter_chunk_size <= 0:
+        item_filter_chunk_size = 1000
     LOGGER.info(
-        "SSAS verification start | requested_items=%s enable_mock=%s has_query=%s",
+        "SSAS verification start | requested_items=%s enable_mock=%s item_filter_chunk_size=%s",
         len(unique_items),
         bool(ssas_cfg.get("enable_mock", True)),
-        bool(str(ssas_cfg.get("query", "")).strip()),
+        item_filter_chunk_size,
     )
     if bool(ssas_cfg.get("enable_mock", True)):
         LOGGER.info("SSAS verification using mock path (enable_mock=true).")
@@ -478,40 +518,40 @@ def fetch_verification_flags(items: list[str]) -> dict[str, bool]:
 
     connection = str(ssas_cfg.get("connection", "")).strip()
     database = str(ssas_cfg.get("database", "")).strip()
-    query = str(ssas_cfg.get("query", "")).strip()
     timeout_seconds = int(ssas_cfg.get("timeout_seconds", 60) or 60)
     access_token, token_source = _resolve_ssas_access_token(ssas_cfg)
 
-    if not connection or not database or not query:
+    if not connection or not database:
         LOGGER.warning(
             "SSAS configuration is incomplete. Falling back to deterministic verification. "
-            "connection_set=%s database_set=%s query_set=%s",
+            "connection_set=%s database_set=%s",
             bool(connection),
             bool(database),
-            bool(query),
         )
         return _mock_verification_flags(unique_items)
 
     flags = {item: False for item in unique_items}
-    requested_items = set(unique_items)
     connection_string = (
         f"Provider=MSOLAP;Data Source={connection};Initial Catalog={database};Catalog={database};"
+        "Integrated Security=ClaimsToken;Persist Security Info=True;"
+        f"Connect Timeout=60;Command Timeout={timeout_seconds};"
     )
     if access_token:
         connection_string = (
             f"Provider=MSOLAP;Data Source={connection};Initial Catalog={database};Catalog={database};"
             f"Password={access_token};Persist Security Info=True;User ID=app:;"
+            f"Connect Timeout=60;Command Timeout={timeout_seconds};"
         )
-    query_hash = hashlib.sha256(query.encode("utf-8")).hexdigest()[:12]
+    chunk_count = (len(unique_items) + item_filter_chunk_size - 1) // item_filter_chunk_size
 
     try:
         LOGGER.info(
-            "SSAS opening pyadomd connection | database=%s timeout=%s query_hash=%s token_source=%s token_present=%s",
+            "SSAS opening pyadomd connection | database=%s timeout=%s token_source=%s token_present=%s chunks=%s",
             database,
             timeout_seconds,
-            query_hash,
             token_source,
             bool(access_token),
+            chunk_count,
         )
         try:
             from pyadomd import Pyadomd  # type: ignore
@@ -523,28 +563,55 @@ def fetch_verification_flags(items: list[str]) -> dict[str, bool]:
         rows_read = 0
         matched_items = 0
         with Pyadomd(connection_string) as conn:
-            cursor = conn.cursor()
-            try:
-                LOGGER.info("SSAS executing query via pyadomd.")
-                cursor.execute(query)
-                item_ordinal, verified_ordinal = _resolve_ssas_field_ordinals(
-                    getattr(cursor, "description", [])
-                )
-                for row in _iter_pyadomd_rows(cursor):
-                    rows_read += 1
-                    item_value = normalize_item_number(row[item_ordinal])
-                    if item_value in requested_items:
-                        matched_items += 1
-                        flags[item_value] = flags[item_value] or _coerce_ssas_flag(
-                            row[verified_ordinal]
-                        )
-            finally:
-                close_fn = getattr(cursor, "close", None)
-                if callable(close_fn):
+            for chunk_index in range(0, len(unique_items), item_filter_chunk_size):
+                item_chunk = unique_items[chunk_index : chunk_index + item_filter_chunk_size]
+                query = _build_verification_query(item_chunk)
+                query_hash = hashlib.sha256(query.encode("utf-8")).hexdigest()[:12]
+                requested_items = set(item_chunk)
+
+                cursor = conn.cursor()
+                try:
+                    LOGGER.info(
+                        "SSAS executing chunk query via pyadomd | chunk=%s/%s items=%s query_hash=%s",
+                        (chunk_index // item_filter_chunk_size) + 1,
+                        chunk_count,
+                        len(item_chunk),
+                        query_hash,
+                    )
+                    cursor.execute(query)
+                    item_ordinal, verified_ordinal = _resolve_ssas_field_ordinals(
+                        getattr(cursor, "description", [])
+                    )
+
+                    chunk_rows = 0
                     try:
-                        close_fn()
-                    except Exception:
-                        pass
+                        for row in _iter_pyadomd_rows(cursor):
+                            chunk_rows += 1
+                            rows_read += 1
+                            item_value = normalize_item_number(row[item_ordinal])
+                            if item_value in requested_items:
+                                matched_items += 1
+                                flags[item_value] = flags[item_value] or _coerce_ssas_flag(
+                                    row[verified_ordinal]
+                                )
+                    except Exception as exc:
+                        if _is_adomd_unknown_response(exc) and chunk_rows > 0:
+                            LOGGER.warning(
+                                "SSAS ADOMD reader ended with unknown response after %s rows in chunk %s/%s. "
+                                "Treating as end-of-result for this chunk.",
+                                chunk_rows,
+                                (chunk_index // item_filter_chunk_size) + 1,
+                                chunk_count,
+                            )
+                        else:
+                            raise
+                finally:
+                    close_fn = getattr(cursor, "close", None)
+                    if callable(close_fn):
+                        try:
+                            close_fn()
+                        except Exception:
+                            pass
 
         verified_true = sum(1 for v in flags.values() if v)
         LOGGER.info(

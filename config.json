@@ -14,7 +14,7 @@
     "enable_mock": true
   },
   "logging": {
-    "directory": "logs",
+    "directory": "\\\\therestaurantstore.com\\920\\Data\\Logistics\\Logistics App\\Logs",
     "max_bytes": 1048576,
     "backup_count": 5
   },

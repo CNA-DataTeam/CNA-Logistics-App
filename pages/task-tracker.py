@@ -63,6 +63,11 @@ import config
 import utils
 from streamlit_autorefresh import st_autorefresh
 
+LOGGER = utils.get_program_logger(
+    "task_tracker_page",
+    config.LOG_FILES["task_tracker"],
+)
+
 # Page configuration
 st.set_page_config(page_title="Task Tracker", layout="wide")
 
@@ -109,6 +114,10 @@ for k, v in DEFAULT_STATE.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
+if "task_tracker_log_session_initialized" not in st.session_state:
+    LOGGER.info("Task Tracker session initialized.")
+    st.session_state.task_tracker_log_session_initialized = True
+
 # Restore state from live activity file on page load/refresh
 _user_key_for_restore = utils.sanitize_key(utils.get_os_user())
 if not st.session_state.state_restored:
@@ -144,6 +153,7 @@ def compute_elapsed_seconds() -> int:
 
 def reset_all():
     """Reset all task state and delete current live activity record."""
+    LOGGER.info("Resetting task tracker state.")
     if "current_user_key" in st.session_state:
         utils.delete_live_activity(LIVE_ACTIVITY_DIR, st.session_state.current_user_key)
     old_counter = st.session_state.reset_counter
@@ -158,6 +168,7 @@ def reset_all():
 
 def start_task():
     """Start a new task timing."""
+    LOGGER.info("Task timer started.")
     st.session_state.state = "running"
     st.session_state.start_utc = utils.now_utc()
     st.session_state.end_utc = None
@@ -171,6 +182,7 @@ def pause_task():
     """Pause the current task."""
     if st.session_state.state != "running":
         return
+    LOGGER.info("Task timer paused.")
     st.session_state.state = "paused"
     if not st.session_state.pause_start_utc:
         st.session_state.pause_start_utc = utils.now_utc()
@@ -187,6 +199,7 @@ def resume_task():
     """Resume a paused task."""
     if st.session_state.state != "paused":
         return
+    LOGGER.info("Task timer resumed.")
     if st.session_state.pause_start_utc:
         pause_delta = int((utils.now_utc() - st.session_state.pause_start_utc).total_seconds())
         if pause_delta > 0:
@@ -204,6 +217,7 @@ def resume_task():
 
 def end_task():
     """End the current task."""
+    LOGGER.info("Task timer ended.")
     st.session_state.ended_from_paused = st.session_state.state == "paused"
     st.session_state.state = "ended"
     st.session_state.end_utc = utils.now_utc()
@@ -247,6 +261,13 @@ def archive_task(user_login: str, full_name: str, user_key: str, task_name: str,
     utils.load_archived_tasks.clear()
     if "current_user_key" in st.session_state:
         utils.delete_live_activity(LIVE_ACTIVITY_DIR, st.session_state.current_user_key)
+    LOGGER.info(
+        "Task archived | user=%s task=%s cadence=%s account=%s",
+        user_login,
+        task_name,
+        st.session_state.selected_cadence,
+        selected_account,
+    )
     reset_all()
     st.session_state.archived = True
 
@@ -320,6 +341,13 @@ def confirm_submit(user_login, full_name, user_key, task_name, selected_account)
             eastern_start = utils.to_eastern(st.session_state.start_utc)
             fname = f"task_{eastern_start:%Y%m%d_%H%M%S}_{record['TaskID'][:8]}.parquet"
             utils.atomic_write_parquet(df_record, out_dir / fname)
+            LOGGER.info(
+                "Completed task uploaded | user=%s task=%s cadence=%s file=%s",
+                user_login,
+                task_name,
+                st.session_state.selected_cadence,
+                out_dir / fname,
+            )
             st.session_state.confirm_open = False
             st.session_state.confirm_rendered = False
             reset_all()
@@ -582,6 +610,12 @@ if st.session_state.state in ("running", "paused") and not st.session_state.live
         pause_start_utc=st.session_state.pause_start_utc,
     )
     st.session_state.live_activity_saved = True
+    LOGGER.info(
+        "Live activity saved | user=%s task=%s state=%s",
+        user_login,
+        task_name,
+        st.session_state.state,
+    )
     st.session_state.live_task_name = task_name
     st.session_state.live_cadence = st.session_state.selected_cadence
     st.session_state.live_account = selected_account

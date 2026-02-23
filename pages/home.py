@@ -13,6 +13,9 @@ import base64
 import config
 import utils
 
+LOGGER = utils.get_program_logger("home_page", config.LOG_FILES["home"])
+LOGGER.info("Home page rendered.")
+
 # ============================================================
 # PAGE CONFIG
 # ============================================================

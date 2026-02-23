@@ -24,7 +24,7 @@ Inputs:
 
 Outputs:
     - Parquet files written to config.PERSONNEL_DIR
-    - Logs written to config.LOG_FILE
+    - Logs written to config.LOG_BASE_DIR/<user>/pages/startup.log
 """
 
 import logging
@@ -34,18 +34,30 @@ from pathlib import Path
 import getpass
 import os
 import platform
+import re
 import subprocess
 import sys
 import config
 
+def sanitize_user_key(value: str) -> str:
+    """Sanitize username to filesystem-safe key."""
+    value = str(value).strip().lower()
+    value = re.sub(r"\s+", "_", value)
+    value = re.sub(r"[^a-z0-9_\-\.]", "", value)
+    return value
+
 def setup_logging() -> None:
     """Configure logging to file."""
-    config.LOG_DIR.mkdir(parents=True, exist_ok=True)
+    user_key = sanitize_user_key(get_os_user()) or "unknown_user"
+    startup_log_dir = config.LOG_BASE_DIR / user_key / str(config.LOG_USER_SUBDIR_NAME)
+    startup_log_dir.mkdir(parents=True, exist_ok=True)
+    startup_log_file = startup_log_dir / config.LOG_FILES.get("startup", "startup.log")
     logging.basicConfig(
-        filename=str(config.LOG_FILE),
+        filename=str(startup_log_file),
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
+        force=True,
     )
 
 def get_os_user() -> str:

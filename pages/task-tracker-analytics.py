@@ -16,6 +16,11 @@ import altair as alt
 import config
 import utils
 
+LOGGER = utils.get_program_logger(
+    "task_tracker_analytics_page",
+    config.LOG_FILES["task_tracker_analytics"],
+)
+
 
 # ============================================================
 # PAGE CONFIG (SAFE AT IMPORT)
@@ -236,15 +241,18 @@ def main_performance_review(filtered_df: pd.DataFrame, user_filter: str) -> None
 # MAIN ENTRY (ONLY PLACE HEAVY WORK STARTS)
 # ============================================================
 def main() -> None:
+    LOGGER.info("Task Tracker Analytics page rendered.")
     st.markdown(utils.get_global_css(), unsafe_allow_html=True)
 
     user_ctx = utils.get_user_context()
     if not user_ctx.can_view_analytics:
+        LOGGER.warning("Unauthorized analytics page access for user=%s", user_ctx.user_login)
         st.error("You are not authorized to view this page.")
         return
 
     df = utils.load_all_completed_tasks(config.COMPLETED_TASKS_DIR)
     if df.empty:
+        LOGGER.info("Analytics page has no completed task data.")
         st.warning("No completed task data available.")
         return
 
@@ -266,8 +274,14 @@ def main() -> None:
     st.divider()
 
     filtered_df, user_filter = main_filters(df)
+    LOGGER.info(
+        "Analytics filters applied | user_filter=%s rows=%s",
+        user_filter,
+        len(filtered_df),
+    )
 
     if filtered_df.empty:
+        LOGGER.info("Analytics filters produced no rows.")
         st.info("No data for selected filters.")
         return
 

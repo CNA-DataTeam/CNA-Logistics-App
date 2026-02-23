@@ -38,6 +38,11 @@ from openpyxl import load_workbook
 import config
 import utils
 
+LOGGER = utils.get_program_logger(
+    "fedex_address_validator_page",
+    config.LOG_FILES["fedex_address_validator"],
+)
+
 # ============================================================
 # PAGE CONFIG (MUST BE FIRST STREAMLIT CALL)
 # ============================================================
@@ -65,6 +70,7 @@ st.markdown(
 )
 
 st.divider()
+LOGGER.info("FedEx Address Validator page rendered.")
 
 
 # ============================================================
@@ -121,12 +127,15 @@ def mark_rows_as_disputed(file_path: Path, row_indices: List[int]) -> None:
 RESULTS_CSV_FILE: Path = config.ADDRESS_VALIDATION_RESULTS_FILE.with_suffix(".csv")
 
 if not RESULTS_CSV_FILE.exists():
+    LOGGER.error("Results file not found: %s", RESULTS_CSV_FILE)
     st.error(f"Results file not found:\n{RESULTS_CSV_FILE}")
     st.stop()
 
 df = load_results(RESULTS_CSV_FILE)
+LOGGER.info("Loaded FedEx results rows=%s from %s", len(df), RESULTS_CSV_FILE)
 
 if df.empty:
+    LOGGER.info("FedEx results file is empty: %s", RESULTS_CSV_FILE)
     st.info("No results available.")
     st.stop()
 
@@ -545,6 +554,11 @@ if generate_dispute_clicked:
     try:
         with st.spinner("Creating dispute Excel file..."):
             file_name, file_bytes = create_excel_download(selected_rows_for_email)
+        LOGGER.info(
+            "Generated dispute file | file=%s selected_rows=%s",
+            file_name,
+            len(selected_rows_for_email),
+        )
         trigger_file_download(file_name, file_bytes)
         st.success("Dispute file generated and download started.")
         st.download_button(
@@ -555,11 +569,13 @@ if generate_dispute_clicked:
             key=f"fallback_download_{file_name}",
         )
     except Exception as exc:
+        LOGGER.exception("Generate dispute file failed: %s", exc)
         st.error(f"Generate dispute file failed: {type(exc).__name__}: {exc}")
 
 if send_email_clicked:
     try:
         if not FEDEX_EMAIL_TO.strip():
+            LOGGER.error("FedEx email recipient is blank.")
             st.error("FedEx recipient email is blank. Set FEDEX_EMAIL_TO first.")
         else:
             email_body = (
@@ -569,20 +585,25 @@ if send_email_clicked:
             )
             email_opened, email_status = open_email(FEDEX_EMAIL_TO, EMAIL_SUBJECT, email_body)
             if email_opened:
+                LOGGER.info("FedEx email draft opened successfully.")
                 st.success("Outlook draft opened.")
             else:
+                LOGGER.error("Failed to open FedEx email draft. status=%s", email_status)
                 st.error("Failed to open editable Outlook draft.")
                 st.caption(email_status)
     except Exception as exc:
+        LOGGER.exception("Send email failed: %s", exc)
         st.error(f"Send email failed: {type(exc).__name__}: {exc}")
 
 if mark_disputed_clicked:
     try:
         mark_rows_as_disputed(RESULTS_CSV_FILE, selected_indices.tolist())
+        LOGGER.info("Marked rows as disputed | count=%s", len(selected_indices))
         load_results.clear()
         st.success("Selected rows marked as disputed.")
         st.rerun()
     except Exception as exc:
+        LOGGER.exception("Mark disputed failed: %s", exc)
         st.error(f"Failed to mark rows as disputed: {exc}")
 
 # ============================================================

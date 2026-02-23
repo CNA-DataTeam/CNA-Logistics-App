@@ -48,10 +48,12 @@ Outputs:
 from __future__ import annotations
 import base64
 import getpass
+import logging
 import re
 import uuid
 from datetime import datetime, timezone
 from functools import lru_cache
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -140,6 +142,56 @@ def sanitize_key(value: str) -> str:
     value = re.sub(r"\s+", "_", value)
     value = re.sub(r"[^a-z0-9_\-\.]", "", value)
     return value
+
+
+@lru_cache(maxsize=16)
+def get_user_pages_log_dir(user_login: str | None = None) -> Path:
+    """Ensure and return per-user pages log directory: LOG_BASE_DIR/<user>/pages."""
+    user_name = str(user_login or get_os_user()).strip()
+    user_key = sanitize_key(user_name) or "unknown_user"
+    log_dir = Path(config.LOG_BASE_DIR) / user_key / str(config.LOG_USER_SUBDIR_NAME)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    return log_dir
+
+
+@lru_cache(maxsize=64)
+def get_program_logger(
+    logger_name: str,
+    log_filename: str,
+    max_bytes: int = 1_048_576,
+    backup_count: int = 5,
+) -> logging.Logger:
+    """
+    Return a rotating file logger for one program/page.
+    Each logger writes to LOG_BASE_DIR/<user>/pages/<log_filename>.
+    """
+    log_path = get_user_pages_log_dir() / log_filename
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+
+    for handler in list(logger.handlers):
+        if isinstance(handler, RotatingFileHandler):
+            existing = Path(getattr(handler, "baseFilename", ""))
+            if existing == log_path:
+                return logger
+        logger.removeHandler(handler)
+        try:
+            handler.close()
+        except Exception:
+            pass
+
+    handler = RotatingFileHandler(
+        filename=log_path,
+        maxBytes=int(max_bytes),
+        backupCount=int(backup_count),
+        encoding="utf-8",
+    )
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+    )
+    logger.addHandler(handler)
+    return logger
 
 def format_hhmm(seconds: int) -> str:
     """Format seconds as HH:MM."""
